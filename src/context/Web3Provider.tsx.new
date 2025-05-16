@@ -1,0 +1,96 @@
+'use client';
+
+import { createWeb3Modal } from '@web3modal/wagmi/react';
+import { defaultWagmiConfig } from '@web3modal/wagmi/react/config';
+import { WagmiProvider } from 'wagmi';
+import { http } from 'wagmi';
+import { arbitrum, mainnet, optimism, polygon, sepolia } from 'wagmi/chains';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import React from 'react';
+
+// Define chain configurations
+export const chains = [mainnet, sepolia, polygon, arbitrum, optimism];
+export const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID';
+
+// Create metadata object
+const getMetadata = () => ({
+  name: 'Moon Pixel Map',
+  description: 'A collaborative pixel art map on the blockchain',
+  url: typeof window !== 'undefined' ? window.location.origin : 'https://moonpixelmap.io',
+  icons: ['https://avatars.githubusercontent.com/u/37784886'],
+});
+
+// Client-side only component
+const ClientOnly = ({ children }: { children: React.ReactNode }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  return mounted ? <>{children}</> : null;
+};
+
+// Set up providers wrapper component
+export function Web3Provider({ children }: { children: React.ReactNode }) {
+  // Create React Query client only once
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <ClientOnly>
+      <Web3ModalProvider queryClient={queryClient}>
+        {children}
+      </Web3ModalProvider>
+    </ClientOnly>
+  );
+}
+
+// Separate component to avoid issues with hooks being called conditionally
+function Web3ModalProvider({ 
+  children, 
+  queryClient 
+}: { 
+  children: React.ReactNode;
+  queryClient: QueryClient;
+}) {
+  // Create wagmi config
+  const [wagmiConfig] = useState(() => 
+    defaultWagmiConfig({
+      chains,
+      projectId,
+      metadata: getMetadata(),
+      transports: {
+        [mainnet.id]: http(),
+        [sepolia.id]: http(),
+        [polygon.id]: http(),
+        [arbitrum.id]: http(),
+        [optimism.id]: http(),
+      },
+    })
+  );
+
+  // Initialize Web3Modal on the client side only
+  useEffect(() => {
+    createWeb3Modal({
+      wagmiConfig,
+      projectId,
+      chains,
+      themeMode: 'light',
+      themeVariables: {
+        '--w3m-font-family': 'Roboto, sans-serif',
+        '--w3m-accent': '#ef4444',
+        '--w3m-border-radius-master': '0.75rem',
+      },
+    });
+  }, [wagmiConfig]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <WagmiProvider config={wagmiConfig}>
+        {children}
+      </WagmiProvider>
+    </QueryClientProvider>
+  );
+}

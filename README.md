@@ -12,7 +12,7 @@ This project is currently under initial development.
 *   TypeScript
 *   Tailwind CSS
 *   ESLint
-*   Ethers.js (or similar, for wallet interaction - to be added)
+*   Web3Modal + wagmi + viem (for wallet connection)
 *   Socket.IO (for chat - to be added)
 
 ## Prerequisites
@@ -38,7 +38,15 @@ This project is currently under initial development.
 3.  **Set up environment variables:**
     Create a `.env.local` file by copying the example (if one exists) or by adding the necessary variables:
     ```env
-    NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api # Adjust if your backend runs elsewhere
+    # Backend API URL
+    NEXT_PUBLIC_API_URL=http://localhost:4321
+    
+    # Get your project ID from https://cloud.walletconnect.com/
+    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=YOUR_PROJECT_ID
+    
+    # Chain and contract information
+    NEXT_PUBLIC_CHAIN_ID=1
+    NEXT_PUBLIC_CONTRACT_ADDRESS=0x0000000000000000000000000000000000000000
     ```
 
 4.  **Run the development server:**
@@ -60,16 +68,19 @@ This project is currently under initial development.
 
 *   `src/app/`: Contains the main application pages and layouts (using Next.js App Router).
 *   `src/components/`: Reusable UI components.
-*   `src/lib/`: Utility functions, constants, and third-party library configurations.
-*   `src/styles/`: Global styles and Tailwind CSS configuration.
+*   `src/context/`: React context providers (WalletContext, Web3Provider).
+*   `src/hooks/`: Custom React hooks.
+*   `src/services/`: API services and data fetching utilities.
 *   `public/`: Static assets.
 
 ## Backend API
 
 This frontend interacts with the `moon-pixelmap-backend-pg` service. Ensure the backend is running and accessible.
 
-*   Pixel Map Image: `[NEXT_PUBLIC_BACKEND_API_URL]/pixelmap`
-*   Pixel Data (JSON): `[NEXT_PUBLIC_BACKEND_API_URL]/pixels`
+*   Pixel Map Image: `[NEXT_PUBLIC_API_URL]/api/pixelmap`
+*   Pixel Data (JSON): `[NEXT_PUBLIC_API_URL]/api/pixels`
+*   User Data: `[NEXT_PUBLIC_API_URL]/api/users`
+*   Pixel Updates: `[NEXT_PUBLIC_API_URL]/api/pixels-update`
 
 ## Contributing
 

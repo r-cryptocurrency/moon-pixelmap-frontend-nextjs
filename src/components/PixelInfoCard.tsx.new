@@ -1,5 +1,4 @@
-'use client';
-
+// filepath: /home/jw/src/moonplace/moon-pixelmap-frontend-nextjs/src/components/PixelInfoCard.tsx
 import { useEffect, useState } from 'react';
 import { PixelData, fetchPixelData } from '@/services/api';
 import { useWallet } from '@/context/WalletContext';

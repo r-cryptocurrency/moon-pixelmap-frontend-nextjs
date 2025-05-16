@@ -98,32 +98,57 @@ export async function fetchPixelData(x: number, y: number): Promise<PixelData> {
 }
 
 /**
- * Update a pixel (requires authentication)
+ * Update a pixel owned by the user
  * @param x - X coordinate
  * @param y - Y coordinate
- * @param colorHex - Color in hex format (e.g. #FF0000)
- * @param userData - Additional user data to store with the pixel
+ * @param address - Ethereum address of the owner
+ * @param imageData - Image data (URI, base64, etc.)
+ * @param metadata - Additional metadata for the pixel
  * @returns Promise with the updated pixel data
  */
 export async function updatePixel(
   x: number, 
   y: number, 
-  colorHex: string, 
-  userData: Record<string, any>
+  address: string,
+  imageData: string,
+  metadata?: Record<string, any>
 ): Promise<PixelData> {
-  const response = await fetch(`${API_BASE_URL}/api/pixels/${x}/${y}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ color: colorHex, ...userData }),
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to update pixel: ${response.status} ${response.statusText}`);
+  try {
+    // Use the frontend API route which will validate and forward to backend
+    const response = await fetch('/api/pixels-update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        address,
+        x,
+        y,
+        image: imageData,
+        metadata
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Failed to update pixel: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Map to our PixelData format
+    return {
+      x: data.x,
+      y: data.y,
+      owner: data.owner || address,
+      uri: data.uri || imageData,
+      lastUpdated: data.timestamp || new Date().toISOString(),
+      metadata: data.metadata || metadata
+    };
+  } catch (error) {
+    console.error('Error updating pixel:', error);
+    throw error;
   }
-  
-  return await response.json();
 }
 
 /**
