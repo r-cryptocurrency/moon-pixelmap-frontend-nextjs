@@ -1,0 +1,51 @@
+/* Additional styles for components */
+/* Make hover effects more visible */
+
+.hover-enhanced:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.hover-enhanced {
+  transition: all 0.2s ease;
+}
+
+/* Add panel styles with light grey background */
+.panel {
+  background-color: rgba(209, 213, 219, 0.85) !important; /* light grey (gray-300) with opacity */
+  border: 1px solid rgba(229, 231, 235, 0.4);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 1rem !important; /* Ensure rounded corners */
+  margin: 0.25rem; /* Add margin to create spacing between panels */
+  overflow: hidden; /* Prevent content overflow */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Text color adjustments for light panels */
+.panel h3 {
+  color: rgba(31, 41, 55, 0.9) !important; /* dark text for headers */
+}
+
+.panel p, .panel span {
+  color: rgba(55, 65, 81, 0.9) !important; /* slightly lighter text for content */
+}
+
+/* Fix vertical spacing */
+html, body {
+  height: 100%;
+  overflow-y: hidden;
+}
+
+/* Make sure content properly fills and doesn't overflow */
+main {
+  overflow-y: auto;
+  padding-bottom: 0.75rem;
+}
+
+/* Properly handle panel content overflow */
+.panel-content {
+  overflow-y: auto;
+  flex: 1;
+}

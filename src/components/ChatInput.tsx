@@ -13,14 +13,14 @@ export default function ChatInputArea({ className = '' }: { className?: string }
   };
 
   return (
-    <div className={`${className} bg-gray-800 bg-opacity-80 rounded-lg shadow-md p-3 h-full`}>
+    <div className={`${className} panel p-2 h-auto`}>
       <form onSubmit={handleSendMessage} className="flex gap-2">
         <input
           type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your message..."
-          className="flex-1 bg-gray-900 bg-opacity-50 rounded-md px-3 py-2 text-white placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 bg-gray-100 bg-opacity-70 rounded-md px-3 py-2 text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300"
         />
         <button
           type="submit"
