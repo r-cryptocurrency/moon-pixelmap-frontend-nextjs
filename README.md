@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Moon Pixel Map Frontend (Next.js)
+
+This is the Next.js frontend for the Moon Pixel Map application. It allows users to view the pixel map, connect their wallets, see their owned pixels, and interact with a chat feature.
+
+## Project Status
+
+This project is currently under initial development.
+
+## Tech Stack
+
+*   Next.js (with App Router)
+*   TypeScript
+*   Tailwind CSS
+*   ESLint
+*   Ethers.js (or similar, for wallet interaction - to be added)
+*   Socket.IO (for chat - to be added)
+
+## Prerequisites
+
+*   Node.js (version specified in `.nvmrc` or latest LTS)
+*   npm or yarn
 
 ## Getting Started
 
-First, run the development server:
+1.  **Clone the repository (if not already done):**
+    ```bash
+    # git clone <repository-url>
+    cd moon-pixelmap-frontend-nextjs
+    ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    # yarn install
+    ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3.  **Set up environment variables:**
+    Create a `.env.local` file by copying the example (if one exists) or by adding the necessary variables:
+    ```env
+    NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api # Adjust if your backend runs elsewhere
+    ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    # or
+    # yarn dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Available Scripts
 
-## Learn More
+*   `dev`: Runs the app in development mode.
+*   `build`: Builds the app for production.
+*   `start`: Starts a production server.
+*   `lint`: Lints the codebase.
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+*   `src/app/`: Contains the main application pages and layouts (using Next.js App Router).
+*   `src/components/`: Reusable UI components.
+*   `src/lib/`: Utility functions, constants, and third-party library configurations.
+*   `src/styles/`: Global styles and Tailwind CSS configuration.
+*   `public/`: Static assets.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Backend API
 
-## Deploy on Vercel
+This frontend interacts with the `moon-pixelmap-backend-pg` service. Ensure the backend is running and accessible.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+*   Pixel Map Image: `[NEXT_PUBLIC_BACKEND_API_URL]/pixelmap`
+*   Pixel Data (JSON): `[NEXT_PUBLIC_BACKEND_API_URL]/pixels`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+Please refer to the main project's contributing guidelines.
+
+## License
+
+This project is licensed under the [Specify License Here].
