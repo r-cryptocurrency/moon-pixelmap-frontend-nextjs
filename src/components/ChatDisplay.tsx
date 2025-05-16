@@ -29,16 +29,18 @@ export default function ChatDisplayArea({ className = '' }: { className?: string
   }, []);
 
   return (
-    <div className={`${className} panel flex flex-col p-3 h-full max-h-full`}>
-      <h3 className="font-semibold mb-2 px-1">Chat Display</h3>
-      <div className="panel-content space-y-2 overflow-y-auto flex-1">
-        {sampleMessages.map(msg => (
-          <div key={msg.id} className="bg-gray-200 bg-opacity-70 rounded-lg p-2 backdrop-blur-sm">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-blue-700 text-sm font-mono">{msg.user}</span>
-              <span className="text-gray-600 text-xs">{msg.timeString}</span>
+    <div className={`${className} panel flex flex-col h-full max-h-full p-0`}> {/* Remove panel padding for custom internal padding */}
+      <h3 className="font-semibold px-4 py-2 text-sm border-b border-gray-300">Chat Display</h3>
+      <div className="panel-content overflow-y-auto flex-1 px-2 py-1">
+        {sampleMessages.map((msg, index) => (
+          <div key={msg.id} className={`py-1.5 ${index < sampleMessages.length - 1 ? 'border-b border-gray-300/50' : ''}`}>
+            <div className="bg-gray-200 bg-opacity-60 rounded p-1.5 backdrop-blur-sm">
+              <div className="flex justify-between items-center mb-0.5">
+                <span className="text-blue-700 text-xs font-mono">{msg.user}</span>
+                <span className="text-gray-600 text-xs">{msg.timeString}</span>
+              </div>
+              <p className="text-gray-800 text-xs">{msg.message}</p>
             </div>
-            <p className="text-gray-800 text-sm">{msg.message}</p>
           </div>
         ))}
       </div>

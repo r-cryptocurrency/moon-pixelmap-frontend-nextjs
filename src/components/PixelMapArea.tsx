@@ -20,19 +20,25 @@ export default function PixelMapArea({ className = '', onPixelSelect }: PixelMap
       />
       
       {/* Instructions overlay */}
-      <div className="absolute bottom-2 left-2 bg-white/70 backdrop-blur-sm text-gray-800 text-xs p-2 rounded-md shadow-md">
-        <div className="flex items-center space-x-1">
-          <span className="bg-gray-200 px-1 rounded border border-gray-300">Mouse wheel</span> 
-          <span>=</span> 
-          <span>Zoom</span> 
-          <span>|</span>
-          <span className="bg-gray-200 px-1 rounded border border-gray-300">Drag</span> 
-          <span>=</span> 
-          <span>Pan</span> 
-          <span>|</span>
-          <span className="bg-gray-200 px-1 rounded border border-gray-300">Click</span> 
-          <span>=</span> 
-          <span>Select pixel</span>
+      <div className="absolute bottom-4 left-4 bg-white/70 backdrop-blur-sm text-gray-800 text-xs p-3 rounded-md shadow-md">
+        <div className="flex items-center flex-wrap gap-2">
+          <div className="flex items-center space-x-1">
+            <span className="bg-gray-200 px-2 py-0.5 rounded border border-gray-300">Mouse wheel</span> 
+            <span>=</span> 
+            <span>Zoom</span> 
+          </div>
+          <span className="text-gray-500">|</span>
+          <div className="flex items-center space-x-1">
+            <span className="bg-gray-200 px-2 py-0.5 rounded border border-gray-300">Drag</span> 
+            <span>=</span> 
+            <span>Pan</span> 
+          </div>
+          <span className="text-gray-500">|</span>
+          <div className="flex items-center space-x-1">
+            <span className="bg-gray-200 px-2 py-0.5 rounded border border-gray-300">Click</span> 
+            <span>=</span> 
+            <span>Select pixel</span>
+          </div>
         </div>
       </div>
     </div>

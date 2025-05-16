@@ -25,7 +25,7 @@
 
 /* Text color adjustments for light panels */
 .panel h3 {
-  color: rgba(31, 41, 55, 0.9) !important; /* dark text for headers */
+  color: rgba(43, 48, 56, 0.9) !important; /* dark text for headers */
 }
 
 .panel p, .panel span {
