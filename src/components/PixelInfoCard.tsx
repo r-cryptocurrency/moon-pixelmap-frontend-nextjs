@@ -39,8 +39,8 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
   // Show placeholder when no pixel is selected
   if (x === undefined || y === undefined) {
     return (
-      <div className={`${className} p-4 bg-black/20 rounded`}>
-        <p className="text-center text-white/70">Select a pixel to view information</p>
+      <div className={`${className} p-4 bg-gray-800/80 rounded-lg shadow-md h-full`}>
+        <p className="text-center text-gray-400">Select a pixel to view information</p>
       </div>
     );
   }
@@ -48,8 +48,11 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
   // Show loading state
   if (loading) {
     return (
-      <div className={`${className} p-4 bg-black/20 rounded`}>
-        <p className="text-center text-white/70">Loading pixel ({x}, {y}) information...</p>
+      <div className={`${className} p-4 bg-gray-800/80 rounded-lg shadow-md h-full`}>
+        <div className="flex items-center justify-center space-x-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+          <p className="text-center text-gray-300">Loading pixel ({x}, {y}) information...</p>
+        </div>
       </div>
     );
   }
@@ -57,22 +60,27 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
   // Show error state
   if (error) {
     return (
-      <div className={`${className} p-4 bg-black/20 rounded`}>
-        <h3 className="text-lg font-bold mb-2">Pixel ({x}, {y})</h3>
-        <p className="text-red-400">{error}</p>
+      <div className={`${className} p-4 bg-gray-800/80 rounded-lg shadow-md h-full`}>
+        <h3 className="text-lg font-bold mb-2 text-white">Pixel ({x}, {y})</h3>
+        <div className="flex items-center space-x-2 bg-red-900/30 p-2 rounded-md">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <p className="text-red-300">{error}</p>
+        </div>
       </div>
     );
   }
 
   // Show pixel information
   return (
-    <div className={`${className} p-4 bg-black/20 rounded overflow-hidden`}>
-      <h3 className="text-lg font-bold mb-2">Pixel ({x}, {y})</h3>
+    <div className={`${className} p-4 bg-gray-800/80 rounded-lg shadow-md overflow-hidden h-full`}>
+      <h3 className="text-lg font-bold mb-3 text-white">Pixel ({x}, {y})</h3>
       
       {pixelInfo ? (
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-white/70">Owner:</span>
+            <span className="text-gray-300">Owner:</span>
             <span className="text-white font-mono truncate ml-2">
               {pixelInfo.owner ? pixelInfo.owner.substring(0, 6) + '...' + pixelInfo.owner.substring(pixelInfo.owner.length - 4) : 'None'}
             </span>
@@ -80,11 +88,11 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
           
           {pixelInfo.color && (
             <div className="flex justify-between items-center">
-              <span className="text-white/70">Color:</span>
+              <span className="text-gray-300">Color:</span>
               <div className="flex items-center gap-2">
-                <span>{pixelInfo.color}</span>
+                <span className="text-white">{pixelInfo.color}</span>
                 <div 
-                  className="w-4 h-4 border border-white/30" 
+                  className="w-5 h-5 border border-gray-500 rounded-sm shadow-inner" 
                   style={{ backgroundColor: pixelInfo.color }}
                 />
               </div>
@@ -93,22 +101,22 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
           
           {pixelInfo.lastUpdated && (
             <div className="flex justify-between">
-              <span className="text-white/70">Last Updated:</span>
-              <span>{new Date(pixelInfo.lastUpdated).toLocaleString()}</span>
+              <span className="text-gray-300">Last Updated:</span>
+              <span className="text-white">{new Date(pixelInfo.lastUpdated).toLocaleString()}</span>
             </div>
           )}
           
           {pixelInfo.metadata && Object.keys(pixelInfo.metadata).length > 0 && (
             <div className="mt-4">
-              <div className="text-white/70 mb-1">Metadata:</div>
-              <pre className="bg-black/30 p-2 rounded text-xs overflow-auto max-h-40">
+              <div className="text-gray-300 mb-1">Metadata:</div>
+              <pre className="bg-gray-900/80 p-3 rounded-md text-xs text-gray-200 overflow-auto max-h-40 border border-gray-700 shadow-inner">
                 {JSON.stringify(pixelInfo.metadata, null, 2)}
               </pre>
             </div>
           )}
         </div>
       ) : (
-        <p className="text-center text-white/70">No information available for this pixel</p>
+        <p className="text-center text-gray-300">No information available for this pixel</p>
       )}
     </div>
   );

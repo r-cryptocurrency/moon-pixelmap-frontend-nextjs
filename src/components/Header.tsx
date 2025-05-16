@@ -7,20 +7,20 @@ export default function Header() {
       <div className="container mx-auto px-4 py-2 flex items-center justify-between">
         <Link href="/" className="no-underline">
           <Image 
-            src="/logo_light-01.png" 
+            src="/logo_w_text.png" 
             alt="Logo" 
-            width={150} 
-            height={38} 
+            width={300} 
+            height={79} 
             className="py-1"
             style={{ objectFit: 'contain' }}
           />
         </Link>
-        <h4 className="text-base font-bold no-underline mx-auto" style={{ color: 'white' }}>Moon Pixel Map</h4>
+        <h2 className="text-base font-bold no-underline mx-auto" style={{ color: 'white' }}>MoonPlace.io</h2>
         <Image 
           src="/moon.png" 
           alt="Moon" 
-          width={24} 
-          height={24} 
+          width={70} 
+          height={42} 
           className="mr-2" 
         />
       </div>

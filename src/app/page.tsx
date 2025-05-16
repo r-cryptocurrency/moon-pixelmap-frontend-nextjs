@@ -25,12 +25,12 @@ export default function Home() {
   };
 
   return (
-    <div className="grid grid-cols-3 gap-4 p-4 h-[calc(100vh-8rem)] mx-auto w-full">
+    <div className="grid grid-cols-3 gap-8 p-8 h-[calc(100vh-8rem)] mx-auto w-full max-w-[1800px]">
       <PixelMapArea 
         className="col-span-2 h-full" 
         onPixelSelect={handlePixelSelect} 
       />
-      <div className="col-start-3 h-full grid grid-rows-[auto_1fr_auto] gap-4">
+      <div className="col-start-3 h-full grid grid-rows-[auto_1fr_auto] gap-6">
         <StatusPanel
           className="row-start-1"
           selectedPixel={selectedPixel}
@@ -38,7 +38,7 @@ export default function Home() {
           walletAddress={walletAddress}
           onConnectWallet={connectWallet}
         />
-        <ChatDisplay className="row-start-2 overflow-y-auto" />
+        <ChatDisplay className="row-start-2 overflow-y-auto min-h-[200px]" />
         <ChatInput className="row-start-3" />
       </div>
     </div>

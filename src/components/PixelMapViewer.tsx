@@ -67,10 +67,12 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
     const mapWidth = PIXEL_MAP_SIZE * pixelSize;
     const mapHeight = PIXEL_MAP_SIZE * pixelSize;
     
-    const centerX = (canvasWidth - mapWidth) / 2;
-    const centerY = (canvasHeight - mapHeight) / 2;
+    // Ensure the map is centered
+    const centerX = Math.max(0, (canvasWidth - mapWidth) / 2);
+    const centerY = Math.max(0, (canvasHeight - mapHeight) / 2);
     
     setPan({ x: centerX, y: centerY });
+    console.log('Centered map at', centerX, centerY, 'canvas:', canvasWidth, canvasHeight, 'map:', mapWidth, mapHeight);
   };
   
   // Draw the pixel map when image is loaded or when pan/zoom changes
@@ -146,29 +148,54 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
   }, [imageObj]);
   
   // Handle mouse events for pan and click
+  const [clickStart, setClickStart] = useState({ x: 0, y: 0, time: 0 });
+  const [hasMoved, setHasMoved] = useState(false);
+  const dragThreshold = 5; // Minimum pixels moved to be considered a drag
+  const clickThreshold = 200; // Maximum milliseconds for a click
+  
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 0) { // Left click
-      setDragging(true);
+      const startPos = {
+        x: e.clientX,
+        y: e.clientY,
+        time: Date.now()
+      };
+      setClickStart(startPos);
       setDragStart({
         x: e.clientX - pan.x,
         y: e.clientY - pan.y
       });
+      setHasMoved(false);
     }
   };
   
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (dragging) {
-      setPan({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
+    if (e.buttons === 1) { // Left button is being pressed
+      const dx = Math.abs(e.clientX - clickStart.x);
+      const dy = Math.abs(e.clientY - clickStart.y);
+      
+      // If moved beyond threshold, it's a drag
+      if (dx > dragThreshold || dy > dragThreshold) {
+        setDragging(true);
+        setHasMoved(true);
+        
+        setPan({
+          x: e.clientX - dragStart.x,
+          y: e.clientY - dragStart.y
+        });
+      }
     }
   };
   
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const clickDuration = Date.now() - clickStart.time;
+    
     if (dragging) {
       setDragging(false);
-    } else if (onPixelClick) {
+    } 
+    
+    // If it's a quick click without much movement, treat as pixel selection
+    if (!hasMoved && clickDuration < clickThreshold && onPixelClick) {
       // Calculate which pixel was clicked
       const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
