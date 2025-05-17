@@ -237,13 +237,13 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
     <div ref={containerRef} className={`relative ${className}`}>
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="text-white text-lg">Loading pixel map...</div>
+          <div className="text-white text-sm">Loading pixel map...</div>
         </div>
       )}
       
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="text-red-500 text-lg p-4 bg-black bg-opacity-70 rounded">
+          <div className="text-red-500 text-sm p-3 bg-black bg-opacity-70 rounded">
             Error: {error}
           </div>
         </div>
@@ -259,7 +259,7 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
         onWheel={handleWheel}
       />
       
-      <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white p-1 text-xs rounded">
+      <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white p-0.5 text-[10px] rounded">
         Zoom: {Math.round(pixelSize * 10) / 10}x
       </div>
     </div>

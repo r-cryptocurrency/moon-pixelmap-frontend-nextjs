@@ -22,12 +22,12 @@ export default function Home() {
         className="col-span-2 h-full max-h-full overflow-hidden" 
         onPixelSelect={handlePixelSelect} 
       />
-      <div className="col-start-3 h-full max-h-full grid grid-rows-[auto_1fr_auto] gap-1 overflow-hidden">
+      <div className="col-start-3 h-full max-h-full grid grid-rows-[minmax(220px,auto)_1fr_auto] gap-1 overflow-hidden">
         <StatusPanel
-          className="row-start-1"
+          className="row-start-1 overflow-y-auto"
           selectedPixel={selectedPixel}
         />
-        <ChatDisplay className="row-start-2 overflow-y-auto min-h-[150px]" />
+        <ChatDisplay className="row-start-2 overflow-y-auto min-h-[100px]" />
         <ChatInput className="row-start-3" />
       </div>
     </div>
