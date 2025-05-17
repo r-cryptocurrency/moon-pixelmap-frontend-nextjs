@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWallet } from '@/context/WalletContext';
+import { useAccount } from 'wagmi';
 import { fetchUserData } from '@/services/userApi';
 
 export interface UserPixelsData {
@@ -9,7 +9,7 @@ export interface UserPixelsData {
 }
 
 export function useUserPixels(): UserPixelsData {
-  const { address, isConnected } = useWallet();
+  const { address, isConnected } = useAccount();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ownedPixelsCount, setOwnedPixelsCount] = useState<number | null>(null);

@@ -12,7 +12,7 @@ This project is currently under initial development.
 *   TypeScript
 *   Tailwind CSS
 *   ESLint
-*   Web3Modal + wagmi + viem (for wallet connection)
+*   Reown AppKit + Wagmi + Viem (for wallet connection)
 *   Socket.IO (for chat - to be added)
 
 ## Prerequisites
@@ -41,8 +41,8 @@ This project is currently under initial development.
     # Backend API URL
     NEXT_PUBLIC_API_URL=http://localhost:4321
     
-    # Get your project ID from https://cloud.walletconnect.com/
-    NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=YOUR_PROJECT_ID
+    # Get your project ID from https://cloud.reown.com/
+    NEXT_PUBLIC_REOWN_PROJECT_ID=YOUR_PROJECT_ID
     
     # Chain and contract information
     NEXT_PUBLIC_CHAIN_ID=1

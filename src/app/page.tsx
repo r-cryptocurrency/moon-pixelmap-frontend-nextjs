@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@/context/WalletContext';
+import { useAccount } from 'wagmi';
 import PixelMapArea from '@/components/PixelMapArea';
 import StatusPanel  from '@/components/StatusPanel';
 import ChatDisplay  from '@/components/ChatDisplay';
@@ -9,7 +9,7 @@ import ChatInput    from '@/components/ChatInput';
 
 export default function Home() {
   const [selectedPixel, setSelectedPixel] = useState<{x: number, y: number} | undefined>();
-  const { isConnected, address } = useWallet();
+  const { isConnected, address } = useAccount();
   
   const handlePixelSelect = (x: number, y: number) => {
     setSelectedPixel({ x, y });

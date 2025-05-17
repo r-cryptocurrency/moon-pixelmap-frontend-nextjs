@@ -1,118 +1,109 @@
 'use client';
 
-import React, { ReactNode, useEffect, useState } from 'react';
-import { createAppKit } from '@reown/appkit/react';
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { cookieStorage, createStorage } from 'wagmi';
-import { chains as configuredChains, projectId as staticProjectId, staticMetadata as configMetadata } from '../config/web3modalConfig';
-import { ThemeProvider } from 'next-themes';
-import dynamic from 'next/dynamic';
-import * as reownAppkitNetworks from '@reown/appkit/networks';
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
+import { createAppKit, type AppKit } from '@reown/appkit';
+import { PropsWithChildren, useEffect, useState, createContext, useContext } from 'react';
+import { WagmiProvider, type Config as WagmiConfigType } from 'wagmi';
+import { arbitrum, mainnet, sepolia, arbitrumNova } from '@reown/appkit/networks';
 
-const WagmiAndWeb3ModalSetup = dynamic(
-  () => import('@/components/WagmiAndWeb3ModalSetup'),
-  {
-    ssr: false,
-    loading: () => <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><p>Loading wallet providers...</p></div>,
-  }
-);
+// This is a placeholder. Replace with your actual Reown Cloud Project ID.
+const REOWN_PROJECT_ID = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID || 'df1b891a13cb85a1964bcde7a4aba713';
 
-interface ProvidersProps {
-  children: ReactNode;
-}
+// Define reownNetworks as a mutable tuple that is guaranteed to be non-empty.
+// The elements are of the types imported from @reown/appkit/networks.
+// This structure should satisfy both AppKitNetwork[] and [AppKitNetwork, ...AppKitNetwork[]]
+const reownNetworks: [typeof mainnet, ...(typeof mainnet | typeof sepolia | typeof arbitrum | typeof arbitrumNova)[]] = 
+  [mainnet, sepolia, arbitrumNova, arbitrum];
 
-export default function Providers({ children }: ProvidersProps) {
-  const [wagmiAdapterInstance, setWagmiAdapterInstance] = useState<WagmiAdapter | null>(null);
-  const [mounted, setMounted] = useState(false);
+// Module-level variables to store instances once created
+let appKitInstanceInternal: AppKit | null = null;
+let wagmiConfigInstanceInternal: WagmiConfigType | null = null;
+
+// Create a context for AppKit
+const AppKitContext = createContext<AppKit | null>(null);
+
+export function Providers({ children }: PropsWithChildren) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && !wagmiAdapterInstance && typeof window !== 'undefined') {
-      if (!staticProjectId) {
-        console.error('CRITICAL: NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set. Reown AppKit will not function.');
-        return;
-      }
-
-      let resolvedReownNetworks = configuredChains.map(chain => {
-        // Attempt to map by chain ID first, then by a normalized name
-        if (chain.id === 1 && reownAppkitNetworks.mainnet) return reownAppkitNetworks.mainnet;
-        if (chain.id === 11155111 && reownAppkitNetworks.sepolia) return reownAppkitNetworks.sepolia;
-        if (chain.id === 137 && reownAppkitNetworks.polygon) return reownAppkitNetworks.polygon;
-        // Add other direct ID mappings as needed
-
-        const networkName = chain.name.toLowerCase().replace(/ /g, '');
-        // @ts-ignore
-        const reownNetwork = reownAppkitNetworks[networkName];
-        if (!reownNetwork) {
-          console.warn(`Reown AppKit network not found for chain name: ${chain.name} (normalized: ${networkName}).`);
-        }
-        return reownNetwork;
-      }).filter(Boolean);
-
-      if (resolvedReownNetworks.length === 0) {
-        console.warn("No valid Reown AppKit networks could be mapped from configuredChains. Falling back to Mainnet and Sepolia.");
-        resolvedReownNetworks = [reownAppkitNetworks.mainnet, reownAppkitNetworks.sepolia].filter(Boolean);
-      }
-      // Ensure it's not empty before passing to adapter
-      if (resolvedReownNetworks.length === 0) {
-        console.error("CRITICAL: No Reown AppKit networks available (mainnet or sepolia not found in imports?). AppKit cannot initialize.");
-        return;
-      }
-      
-      console.log("Providers.tsx: Creating WagmiAdapter with networks:", resolvedReownNetworks, "and projectId:", staticProjectId);
-      const adapter = new WagmiAdapter({
-        // @ts-ignore 
-        networks: resolvedReownNetworks, // Reown expects [Network, ...Network[]]
-        projectId: staticProjectId,
-        storage: createStorage({
-          storage: cookieStorage,
-          key: 'moonpixelmap.reown.wagmi.v1',
-        }),
-      });
-      setWagmiAdapterInstance(adapter);
-
-      // Dynamically set metadata URL based on current window origin
-      const currentOrigin = window.location.origin;
-      const dynamicMetadata = {
-        ...configMetadata, // Spread original metadata
-        url: currentOrigin,
-        icons: [`${currentOrigin}/logo_w_text.png`], // Assuming logo is at the root
-      };
-      console.log("Providers.tsx: Initializing AppKit with dynamic metadata URL:", dynamicMetadata.url);
-
-      createAppKit({
-        adapters: [adapter],
-        // @ts-ignore
-        networks: resolvedReownNetworks, // Reown expects [Network, ...Network[]]
-        projectId: staticProjectId,
-        metadata: dynamicMetadata, // Use dynamically generated metadata
-        features: {
-          analytics: true,
-        },
-        termsConditionsUrl: `${dynamicMetadata.url}/terms`, // Use dynamic URL
-        privacyPolicyUrl: `${dynamicMetadata.url}/privacy`, // Use dynamic URL
-        themeVariables: {
-            // @ts-ignore
-          '--w3m-z-index': 5000,
-        },
-      });
-      console.log("🟢 Reown AppKit initialized successfully in Providers useEffect");
+    if (typeof window === 'undefined') {
+      return;
     }
-  }, [mounted, wagmiAdapterInstance]);
+    if (!REOWN_PROJECT_ID || REOWN_PROJECT_ID === 'YOUR_REOWN_CLOUD_PROJECT_ID') {
+      console.error(
+        'Reown Project ID is not configured. \n' +
+        'Please set the NEXT_PUBLIC_REOWN_PROJECT_ID environment variable in your .env.local file, \n' +
+        'or update the placeholder directly in /src/app/providers.tsx. \n' +
+        'You can obtain a Project ID from https://cloud.reown.com/'
+      );
+      // Consider setting an error state here to display a user-friendly message
+      return;
+    }
 
-  if (!mounted || !wagmiAdapterInstance) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><p>Initializing AppKit...</p></div>;
+    const origin = window.location.origin;
+    const metadata = {
+      name: 'Moon Pixel Map',
+      description: 'Moon Pixel Map Frontend',
+      url: origin,
+      icons: [`${origin}/favicon.ico`],
+    };
+
+    const wagmiAdapter = new WagmiAdapter({
+      networks: reownNetworks,
+      projectId: REOWN_PROJECT_ID,
+      ssr: true, // Important for Next.js
+    });
+    wagmiConfigInstanceInternal = wagmiAdapter.wagmiConfig;
+
+    const newAppKit = createAppKit({
+      adapters: [wagmiAdapter],
+      networks: reownNetworks,
+      projectId: REOWN_PROJECT_ID,
+      metadata,
+      // features: {
+      //   analytics: true // Optional - defaults to your Cloud configuration
+      // }
+    });
+    appKitInstanceInternal = newAppKit;
+    
+    setIsInitialized(true);
+
+  }, []); // Empty dependency array ensures it runs once on mount
+
+  if (!REOWN_PROJECT_ID || REOWN_PROJECT_ID === 'YOUR_REOWN_CLOUD_PROJECT_ID') {
+    return (
+      <div>
+        Error: Reown Project ID is not configured. Please set the NEXT_PUBLIC_REOWN_PROJECT_ID 
+        environment variable in your .env.local file. Get a Project ID from cloud.reown.com.
+      </div>
+    );
+  }
+
+  // Render children only after initialization is complete and instances are available
+  if (!isInitialized || !wagmiConfigInstanceInternal || !appKitInstanceInternal) {
+    return <div>Loading Web3 Providers...</div>;
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-      <WagmiAndWeb3ModalSetup wagmiAdapter={wagmiAdapterInstance}>
-        {children}
-      </WagmiAndWeb3ModalSetup>
-    </ThemeProvider>
+    <AppKitContext.Provider value={appKitInstanceInternal}>
+      <WagmiProvider config={wagmiConfigInstanceInternal}>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </WagmiProvider>
+    </AppKitContext.Provider>
   );
 }
+
+// Custom hook to access AppKit from context
+export const useAppKitContext = () => {
+  const context = useContext(AppKitContext);
+  if (!context) {
+    // This error implies that the hook is used outside of AppKitContext.Provider,
+    // or before the provider has received the appKitInstanceInternal value (i.e., before initialization).
+    throw new Error('useAppKitContext must be used within Providers, and after AppKit has been initialized.');
+  }
+  return context;
+};

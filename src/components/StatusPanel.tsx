@@ -2,7 +2,7 @@
 
 import PixelInfoCard from './PixelInfoCard';
 import { useUserPixels } from '@/hooks/useUserPixels';
-import { useAppKit } from '@reown/appkit/react';
+import { useAppKitContext } from '@/app/providers';
 import { useAccount, useDisconnect } from 'wagmi';
 import { useEffect, useState } from 'react';
 
@@ -15,7 +15,7 @@ export default function StatusPanel({
   className = '', 
   selectedPixel
 }: StatusPanelProps) {
-  const { open } = useAppKit();
+  const appKit = useAppKitContext();
   const { address, isConnected, isConnecting, isReconnecting } = useAccount();
   const { disconnect } = useDisconnect();
   const { loading: loadingPixels, ownedPixelsCount, error: pixelsError } = useUserPixels();
@@ -78,9 +78,9 @@ export default function StatusPanel({
                 <span className="text-gray-800 text-[10px]">Not connected</span>
               </div>
               <button 
-                onClick={() => open()}
-                disabled={isLoadingConnection}
-                className={`hover-enhanced bg-gradient-to-r ${isLoadingConnection ? 'from-gray-400 to-gray-500' : 'from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800'} text-white py-0.5 px-2 rounded-md text-[10px] shadow-lg flex items-center justify-center w-full`}
+                onClick={() => appKit?.open()}
+                disabled={isLoadingConnection || !appKit}
+                className={`hover-enhanced bg-gradient-to-r ${isLoadingConnection || !appKit ? 'from-gray-400 to-gray-500' : 'from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800'} text-white py-0.5 px-2 rounded-md text-[10px] shadow-lg flex items-center justify-center w-full`}
               >
                 {isLoadingConnection ? (
                   <>

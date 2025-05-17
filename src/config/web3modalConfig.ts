@@ -1,5 +1,5 @@
 // This file should only export truly static, SSR-safe constants.
-import { mainnet, polygon, sepolia } from 'viem/chains'; // Ensure chains are imported
+import { mainnet, sepolia, arbitrumNova } from 'viem/chains'; // Ensure chains are imported, added arbitrumNova, removed polygon
 
 export const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'df1b891a13cb85a1964bcde7a4aba713'; // Fallback
 
@@ -24,6 +24,6 @@ export const staticMetadata = {
   icons: [`${getAppUrl()}/logo_w_text.png`] // Use dynamic URL for icon
 };
 
-export const chains = [mainnet, polygon, sepolia] as const;
+export const chains = [mainnet, sepolia, arbitrumNova] as const; // Added arbitrumNova, removed polygon
 
 // console.log('📦 web3modalConfig.ts loaded with metadata URL:', staticMetadata.url);

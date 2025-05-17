@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PixelData, fetchPixelData } from '@/services/api';
-import { useWallet } from '@/context/WalletContext';
+import { useAccount } from 'wagmi';
 import UpdatePixelModal from './UpdatePixelModal';
 
 interface PixelInfoCardProps {
@@ -15,7 +15,7 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
   const [pixelInfo, setPixelInfo] = useState<PixelData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { address, isConnected } = useWallet();
+  const { address, isConnected } = useAccount();
   const [isOwner, setIsOwner] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 

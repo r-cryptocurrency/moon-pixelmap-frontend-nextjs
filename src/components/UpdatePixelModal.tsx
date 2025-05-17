@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useWallet } from '@/context/WalletContext';
+import { useAccount } from 'wagmi';
 import { updatePixel } from '@/services/api';
 
 interface UpdatePixelModalProps {
@@ -19,7 +19,7 @@ export default function UpdatePixelModal({
   onClose,
   onSuccess
 }: UpdatePixelModalProps) {
-  const { address } = useWallet();
+  const { address } = useAccount();
   const [imageData, setImageData] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
