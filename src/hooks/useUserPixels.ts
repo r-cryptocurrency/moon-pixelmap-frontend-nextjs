@@ -30,7 +30,8 @@ export function useUserPixels(): UserPixelsData {
         const userData = await fetchUserData(address);
         
         if (userData) {
-          setOwnedPixelsCount(userData.ownedPixels || 0);
+          // Ensure we are accessing the correct property name from the backend response
+          setOwnedPixelsCount(userData.owned_pixels !== undefined ? userData.owned_pixels : 0);
         } else {
           // No user data yet, but that's fine
           setOwnedPixelsCount(0);

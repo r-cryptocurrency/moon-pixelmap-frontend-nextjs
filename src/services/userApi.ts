@@ -6,12 +6,12 @@
  * User data interface
  */
 export interface UserData {
-  id?: number;
+  id?: number | null; // Allow null for id as per backend response
   address: string;
   ensName?: string | null;
   firstConnected?: string | null;
   lastConnected?: string | null;
-  ownedPixels?: number;
+  owned_pixels?: number; // Changed from ownedPixels to owned_pixels
 }
 
 /**
@@ -49,27 +49,31 @@ export async function saveUserData(userData: Partial<UserData>): Promise<UserDat
  */
 export async function fetchUserData(address: string): Promise<UserData | null> {
   if (!address) return null;
-  
+
   try {
-    // Determine the API URL (use backend directly or our API route)
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL 
-      ? `${process.env.NEXT_PUBLIC_API_URL}/api/users/${address}`
-      : `/api/users/${address}`;
-      
-    const response = await fetch(apiUrl);
-    
-    if (response.status === 404) {
-      return null; // User not found
-    }
-    
+    // Use relative URL and include the address in the path
+    const response = await fetch(`/api/users/${address}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
     if (!response.ok) {
-      const errorData = await response.json();
+      if (response.status === 404) {
+        // User not found, which is a valid case (e.g., new user)
+        return null;
+      }
+      const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
       throw new Error(errorData.error || `Failed to fetch user data: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('Error fetching user data:', error);
+    // It might be better to return null or a specific error object
+    // instead of re-throwing, depending on how the caller handles it.
+    // For now, re-throwing to maintain previous behavior pattern.
     throw error;
   }
 }
