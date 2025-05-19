@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import { fetchPixelMap } from '@/services/api';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useAccount } from 'wagmi';
+import { fetchPixelMap, fetchPixelsData, PixelData } from '@/services/api';
 
 interface PixelMapViewerProps {
   onPixelClick?: (x: number, y: number) => void;
   className?: string;
+}
+
+interface OwnedPixelCoord {
+  x: number;
+  y: number;
 }
 
 export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMapViewerProps) {
@@ -16,7 +22,9 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const { address, isConnected } = useAccount();
+  const [userOwnedPixels, setUserOwnedPixels] = useState<OwnedPixelCoord[]>([]);
+  const [highlightedPixelBorders, setHighlightedPixelBorders] = useState<Map<string, { top: boolean, bottom: boolean, left: boolean, right: boolean }>>(new Map());
   
   const PIXEL_MAP_SIZE = 100; // 100x100 pixel grid
   
@@ -55,8 +63,51 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
     loadPixelMap();
   }, []);
   
+  const fetchAndProcessUserPixels = useCallback(async () => {
+    if (!isConnected || !address) {
+      setUserOwnedPixels([]);
+      setHighlightedPixelBorders(new Map());
+      return;
+    }
+    try {
+      const allPixels = await fetchPixelsData();
+      const owned = allPixels
+        .filter(p => p.owner.toLowerCase() === address.toLowerCase())
+        .map(p => ({ x: p.x, y: p.y }));
+      setUserOwnedPixels(owned);
+      calculateHighlightBorders(owned);
+    } catch (err) {
+      console.error("Error fetching user's pixels for highlighting:", err);
+      setUserOwnedPixels([]);
+      setHighlightedPixelBorders(new Map());
+    }
+  }, [address, isConnected]);
+
+  useEffect(() => {
+    fetchAndProcessUserPixels();
+    // Refresh highlights if user/connection changes
+    const interval = setInterval(fetchAndProcessUserPixels, 30000); // Periodically refresh owned pixels
+    return () => clearInterval(interval);
+  }, [fetchAndProcessUserPixels]);
+
+  const calculateHighlightBorders = (owned: OwnedPixelCoord[]) => {
+    const ownedSet = new Set(owned.map(p => `${p.x},${p.y}`));
+    const borders = new Map<string, { top: boolean, bottom: boolean, left: boolean, right: boolean }>();
+
+    for (const pixel of owned) {
+      const key = `${pixel.x},${pixel.y}`;
+      borders.set(key, {
+        top: !ownedSet.has(`${pixel.x},${pixel.y - 1}`),
+        bottom: !ownedSet.has(`${pixel.x},${pixel.y + 1}`),
+        left: !ownedSet.has(`${pixel.x - 1},${pixel.y}`),
+        right: !ownedSet.has(`${pixel.x + 1},${pixel.y}`),
+      });
+    }
+    setHighlightedPixelBorders(borders);
+  };
+  
   // Center the pixel map in the canvas
-  const centerMap = () => {
+  const centerMap = useCallback(() => {
     if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
@@ -72,8 +123,7 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
     const centerY = Math.max(0, (canvasHeight - mapHeight) / 2);
     
     setPan({ x: centerX, y: centerY });
-    console.log('Centered map at', centerX, centerY, 'canvas:', canvasWidth, canvasHeight, 'map:', mapWidth, mapHeight);
-  };
+  }, [pixelSize]);
   
   // Draw the pixel map when image is loaded or when pan/zoom changes
   useEffect(() => {
@@ -85,6 +135,7 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
     
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = false; // Keep pixel art sharp
     
     // Draw the image with current pan and zoom
     ctx.drawImage(
@@ -97,55 +148,90 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
     // Draw grid lines (optional)
     if (pixelSize > 5) { // Only draw grid when zoomed in enough
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 0.5; // Thinner grid lines
       
       // Draw vertical lines
-      for (let x = 0; x <= PIXEL_MAP_SIZE; x++) {
-        const pixelX = pan.x + x * pixelSize;
+      for (let i = 0; i <= PIXEL_MAP_SIZE; i++) {
+        const xPos = pan.x + i * pixelSize;
         ctx.beginPath();
-        ctx.moveTo(pixelX, pan.y);
-        ctx.lineTo(pixelX, pan.y + PIXEL_MAP_SIZE * pixelSize);
+        ctx.moveTo(xPos, pan.y);
+        ctx.lineTo(xPos, pan.y + PIXEL_MAP_SIZE * pixelSize);
         ctx.stroke();
       }
       
       // Draw horizontal lines
-      for (let y = 0; y <= PIXEL_MAP_SIZE; y++) {
-        const pixelY = pan.y + y * pixelSize;
+      for (let i = 0; i <= PIXEL_MAP_SIZE; i++) {
+        const yPos = pan.y + i * pixelSize;
         ctx.beginPath();
-        ctx.moveTo(pan.x, pixelY);
-        ctx.lineTo(pan.x + PIXEL_MAP_SIZE * pixelSize, pixelY);
+        ctx.moveTo(pan.x, yPos);
+        ctx.lineTo(pan.x + PIXEL_MAP_SIZE * pixelSize, yPos);
         ctx.stroke();
       }
     }
-  }, [loading, imageObj, pan, pixelSize]);
+
+    // Draw highlights for owned pixels
+    if (userOwnedPixels.length > 0 && pixelSize > 2) { // Only draw if visible
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.9)'; // Tailwind blue-500
+        ctx.lineWidth = Math.max(1, pixelSize * 0.1); // Make line thicker as zoom increases
+
+        highlightedPixelBorders.forEach((borders, key) => {
+            const [pxStr, pyStr] = key.split(',');
+            const px = parseInt(pxStr);
+            const py = parseInt(pyStr);
+
+            const drawX = pan.x + px * pixelSize;
+            const drawY = pan.y + py * pixelSize;
+
+            if (borders.top) {
+                ctx.beginPath();
+                ctx.moveTo(drawX, drawY);
+                ctx.lineTo(drawX + pixelSize, drawY);
+                ctx.stroke();
+            }
+            if (borders.bottom) {
+                ctx.beginPath();
+                ctx.moveTo(drawX, drawY + pixelSize);
+                ctx.lineTo(drawX + pixelSize, drawY + pixelSize);
+                ctx.stroke();
+            }
+            if (borders.left) {
+                ctx.beginPath();
+                ctx.moveTo(drawX, drawY);
+                ctx.lineTo(drawX, drawY + pixelSize);
+                ctx.stroke();
+            }
+            if (borders.right) {
+                ctx.beginPath();
+                ctx.moveTo(drawX + pixelSize, drawY);
+                ctx.lineTo(drawX + pixelSize, drawY + pixelSize);
+                ctx.stroke();
+            }
+        });
+    }
+
+  }, [loading, imageObj, pan, pixelSize, userOwnedPixels, highlightedPixelBorders]);
 
   // Handle canvas resizing
   useEffect(() => {
+    const canvas = canvasRef.current; // Capture canvasRef.current
+    const container = containerRef.current; // Capture containerRef.current
+
     const handleResize = () => {
-      if (canvasRef.current && containerRef.current) {
-        const canvas = canvasRef.current;
-        const container = containerRef.current;
-        
-        // Set canvas size to match container
+      if (canvas && container) {
         canvas.width = container.clientWidth;
         canvas.height = container.clientHeight;
-        
-        setCanvasSize({
-          width: canvas.width,
-          height: canvas.height
-        });
-        
-        // If image is already loaded, center it when resizing
-        if (imageObj && !dragging) {
-          centerMap();
-        }
+        // No automatic re-centering here.
+        // The main drawing useEffect (which depends on pan, pixelSize, imageObj)
+        // will handle redrawing the content correctly.
       }
     };
     
     handleResize(); // Initial sizing
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [imageObj]);
+  }, []); // Empty dependency array: runs once to set up and clean up.
+          // handleResize will use the closure-captured canvas and container.
+          // This ensures canvas dimensions are updated on window resize.
   
   // Handle mouse events for pan and click
   const [clickStart, setClickStart] = useState({ x: 0, y: 0, time: 0 });
@@ -189,12 +275,7 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
   
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const clickDuration = Date.now() - clickStart.time;
-    
-    if (dragging) {
-      setDragging(false);
-    } 
-    
-    // If it's a quick click without much movement, treat as pixel selection
+        
     if (!hasMoved && clickDuration < clickThreshold && onPixelClick) {
       // Calculate which pixel was clicked
       const rect = canvasRef.current?.getBoundingClientRect();
@@ -208,6 +289,8 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
         }
       }
     }
+    setDragging(false); // Always reset dragging on mouse up
+    setHasMoved(false); // Reset hasMoved
   };
   
   // Handle mouse wheel for zoom
@@ -223,7 +306,7 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
     
     // Calculate zoom factor
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newPixelSize = Math.max(1, Math.min(50, pixelSize * zoomFactor));
+    const newPixelSize = Math.max(1, Math.min(100, pixelSize * zoomFactor)); // Increased max zoom
     
     // Calculate new pan position to zoom toward mouse position
     const newPanX = mouseX - (mouseX - pan.x) * (newPixelSize / pixelSize);
@@ -234,15 +317,15 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
   };
   
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative ${className} touch-none`} style={{ touchAction: 'none' }}> {/* Added touch-none for better mobile experience */}
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10">
           <div className="text-white text-sm">Loading pixel map...</div>
         </div>
       )}
       
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10">
           <div className="text-red-500 text-sm p-3 bg-black bg-opacity-70 rounded">
             Error: {error}
           </div>
@@ -251,16 +334,16 @@ export default function PixelMapViewer({ onPixelClick, className = '' }: PixelMa
       
       <canvas
         ref={canvasRef}
-        className="w-full h-full bg-black/10 cursor-move"
+        className="w-full h-full bg-gray-200 dark:bg-gray-800 cursor-grab active:cursor-grabbing" // Updated cursor classes
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={() => setDragging(false)}
+        onMouseLeave={() => { setDragging(false); }}
         onWheel={handleWheel}
       />
       
-      <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white p-0.5 text-[10px] rounded">
-        Zoom: {Math.round(pixelSize * 10) / 10}x
+      <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-1.5 py-0.5 text-xs rounded-sm">
+        Zoom: {pixelSize.toFixed(1)}x
       </div>
     </div>
   );

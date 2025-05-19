@@ -800,8 +800,15 @@ const pixelMapAbi = [
 // from moon-pixelmap-backend-pg/src/config.js
 const contractAddress = "0x934095513c1ff89592A4b8490e263da7a6a4CEAc";
 
+// Add the contract address and export the full config object
+// Ensure NEXT_PUBLIC_PIXEL_MAP_CONTRACT_ADDRESS is defined in your .env.local or environment
+export const PIXEL_MAP_CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_PIXEL_MAP_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`;
+
 export const PIXEL_MAP_CONTRACT_CONFIG = {
-  address: contractAddress as \`0x\${string}\`, // Type assertion for address
+  address: PIXEL_MAP_CONTRACT_ADDRESS,
   abi: pixelMapAbi,
-  chainId: arbitrumNova.id,
-};
+  chainId: arbitrumNova.id, // Assuming Arbitrum Nova, adjust if necessary
+} as const;
+
+// To keep the original ABI export if anything else uses it directly (though unlikely)
+export { pixelMapAbi };
