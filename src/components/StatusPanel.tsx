@@ -33,29 +33,29 @@ export default function StatusPanel({
   const isLoadingConnection = isConnecting || isReconnecting;
 
   return (
-    <div className={`${className} flex flex-col gap-6`}>
+    <div className={`${className} flex flex-col gap-2`}>
       {/* Wallet connection status */}
-      <div className="panel p-0 h-full">
+      <div className="panel p-0 flex-shrink-0">
         <h3 className="text-[11px] font-bold px-3 py-1 border-b border-gray-300">Wallet Status</h3>
-        <div className="p-2.5">
+        <div className="p-2">
           {isConnected ? (
-            <div>
+            <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-gray-800 text-[10px]">Connected</span>
               </div>
-              <div className="mt-1 text-[10px] text-gray-600 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
+              <div className="text-[10px] text-gray-600 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
                 {displayAddress}
               </div>
               
-              <div className="mt-2 bg-blue-50 p-2 rounded-md text-[10px]">
+              <div className="bg-blue-50 p-1.5 rounded text-[10px]">
                 {loadingPixels ? (
                   <div className="flex items-center justify-center space-x-1">
                     <div className="animate-spin rounded-full h-2 w-2 border-t-2 border-blue-500"></div>
-                    <span className="text-blue-500">Loading your pixel data...</span>
+                    <span className="text-blue-500">Loading...</span>
                   </div>
                 ) : pixelsError ? (
-                  <div className="text-red-500">Error loading your pixel data</div>
+                  <div className="text-red-500">Error loading pixels</div>
                 ) : (
                   <div className="flex items-center justify-between">
                     <span className="text-gray-700">Your pixels:</span>
@@ -66,21 +66,25 @@ export default function StatusPanel({
               
               <button 
                 onClick={() => disconnect()}
-                className="mt-2 hover-enhanced bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white py-0.5 px-2 rounded-md text-[10px] shadow-lg w-full"
+                className="hover-enhanced bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white py-1 px-2 rounded text-[10px] shadow w-full"
               >
                 Disconnect
               </button>
             </div>
           ) : (
-            <div>
-              <div className="flex items-center gap-2 mb-1.5">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                 <span className="text-gray-800 text-[10px]">Not connected</span>
               </div>
               <button 
                 onClick={() => appKit?.open()}
                 disabled={isLoadingConnection || !appKit}
-                className={`hover-enhanced bg-gradient-to-r ${isLoadingConnection || !appKit ? 'from-gray-400 to-gray-500' : 'from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800'} text-white py-0.5 px-2 rounded-md text-[10px] shadow-lg flex items-center justify-center w-full`}
+                className={`hover-enhanced bg-gradient-to-r ${
+                  isLoadingConnection || !appKit 
+                    ? 'from-gray-400 to-gray-500' 
+                    : 'from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800'
+                } text-white py-1 px-2 rounded text-[10px] shadow flex items-center justify-center w-full`}
               >
                 {isLoadingConnection ? (
                   <>
@@ -92,8 +96,8 @@ export default function StatusPanel({
                 )}
               </button>
               
-              <p className="mt-2 text-[10px] text-gray-500">
-                Connect to Ethereum to view and manage your pixels
+              <p className="text-[10px] text-gray-500">
+                Connect to view your pixels
               </p>
             </div>
           )}

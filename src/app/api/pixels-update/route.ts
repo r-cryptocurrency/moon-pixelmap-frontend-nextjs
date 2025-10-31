@@ -13,9 +13,9 @@ function isValidCoordinate(coord: string | number) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse the request body
+    // Parse JSON from the request
     const body = await request.json();
-    const { address, x, y, image, metadata } = body;
+    const { address, pixels } = body;
 
     // Validate inputs
     if (!address || !isValidEthereumAddress(address)) {
@@ -25,33 +25,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!isValidCoordinate(x) || !isValidCoordinate(y)) {
+    if (!pixels || !Array.isArray(pixels) || pixels.length === 0) {
       return NextResponse.json(
-        { error: 'Invalid coordinates' },
+        { error: 'Invalid or missing pixels data' },
         { status: 400 }
       );
     }
 
-    if (!image) {
-      return NextResponse.json(
-        { error: 'Image data is required' },
-        { status: 400 }
-      );
+    // Validate all pixel coordinates and images
+    for (const pixel of pixels) {
+      if (!isValidCoordinate(pixel.x) || !isValidCoordinate(pixel.y)) {
+        return NextResponse.json(
+          { error: 'Invalid coordinates in pixels array' },
+          { status: 400 }
+        );
+      }
+      
+      if (!pixel.image || typeof pixel.image !== 'string') {
+        return NextResponse.json(
+          { error: 'Image data is required for each pixel' },
+          { status: 400 }
+        );
+      }
     }
 
     // Forward the request to our backend service
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4321';
-    const response = await fetch(`${backendUrl}/api/pixels-update/${x}/${y}`, {
+    
+    console.log('Forwarding to backend:', `${backendUrl}/api/pixels-update`);
+    console.log('Request body:', { 
+      address, 
+      pixelCount: pixels.length, 
+      avgImageLength: Math.round(pixels.reduce((sum: number, p: any) => sum + p.image.length, 0) / pixels.length)
+    });
+    
+    const response = await fetch(`${backendUrl}/api/pixels-update`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         address,
-        image,
-        metadata: metadata || null,
+        pixels,
       }),
     });
+
+    console.log('Backend response status:', response.status);
+    console.log('Backend response headers:', Object.fromEntries(response.headers.entries()));
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Backend returned non-JSON response:', text.substring(0, 500));
+      return NextResponse.json(
+        { error: 'Backend server error - non-JSON response' },
+        { status: 500 }
+      );
+    }
 
     // Return the backend response
     const data = await response.json();

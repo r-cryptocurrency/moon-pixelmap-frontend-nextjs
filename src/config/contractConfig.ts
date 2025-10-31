@@ -796,19 +796,29 @@ const pixelMapAbi = [
   }
 ] as const; // Use 'as const' for better type inference with wagmi
 
-// This is the address for Arbitrum Nova (Chain ID 42170)
-// from moon-pixelmap-backend-pg/src/config.js
-const contractAddress = "0x934095513c1ff89592A4b8490e263da7a6a4CEAc";
+// This was the hardcoded address, keep for reference if needed but prefer env var
+// const contractAddress = "0x934095513c1ff89592A4b8490e263da7a6a4CEAc";
 
-// Add the contract address and export the full config object
-// Ensure NEXT_PUBLIC_PIXEL_MAP_CONTRACT_ADDRESS is defined in your .env.local or environment
-export const PIXEL_MAP_CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_PIXEL_MAP_CONTRACT_ADDRESS || '0x0000000000000000000000000000000000000000') as `0x${string}`;
+// Validate and use the environment variable for the contract address
+// Note: NEXT_PUBLIC_ prefix is required for Next.js to expose to browser
+const contractAddressFromEnv = process.env.NEXT_PUBLIC_PIXEL_MAP_CONTRACT_ADDRESS;
+let typedContractAddress: `0x${string}` | undefined = undefined;
+
+if (contractAddressFromEnv && /^0x[a-fA-F0-9]{40}$/.test(contractAddressFromEnv)) {
+  typedContractAddress = contractAddressFromEnv as `0x${string}`;
+} else {
+  console.error(
+    `CRITICAL: NEXT_PUBLIC_PIXEL_MAP_CONTRACT_ADDRESS is not defined or is invalid in your environment. Expected a 40-character hex string starting with "0x". Received: "${contractAddressFromEnv}". Contract interactions will likely fail.`
+  );
+}
+
+export const PIXEL_MAP_CONTRACT_ADDRESS = typedContractAddress;
 
 export const PIXEL_MAP_CONTRACT_CONFIG = {
-  address: PIXEL_MAP_CONTRACT_ADDRESS,
+  address: (PIXEL_MAP_CONTRACT_ADDRESS || '0x934095513c1ff89592A4b8490e263da7a6a4CEAc'), // Will be `0x${string}` or `undefined`
   abi: pixelMapAbi,
-  chainId: arbitrumNova.id, // Assuming Arbitrum Nova, adjust if necessary
+  chainId: arbitrumNova.id,
 } as const;
 
-// To keep the original ABI export if anything else uses it directly (though unlikely)
+// To keep the original ABI export if anything else uses it directly
 export { pixelMapAbi };

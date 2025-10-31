@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { PixelData, fetchPixelData } from '@/services/api';
 import { useAccount } from 'wagmi';
-import UpdatePixelModal from './UpdatePixelModal';
 
 interface PixelInfoCardProps {
   x?: number;
@@ -17,7 +16,6 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
   const [error, setError] = useState<string | null>(null);
   const { address, isConnected } = useAccount();
   const [isOwner, setIsOwner] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
   useEffect(() => {
     const loadPixelData = async () => {
@@ -147,54 +145,11 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
               </pre>
             </div>
           )}
-
-          {/* Action buttons section */}
-          {isConnected && (
-            <div className="mt-3 space-y-1.5">
-              {isOwner ? (
-                <button 
-                  className="w-full text-center bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-white text-[10px] py-0.5 px-3 rounded shadow"
-                  onClick={() => setIsUpdateModalOpen(true)}
-                >
-                  Update Pixel
-                </button>
-              ) : (
-                <div className="py-0.5 text-center text-[10px] text-gray-500">
-                  {pixelInfo.owner ? 'This pixel is owned by someone else' : 'This pixel is available for purchase'}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       ) : (
         <p className="text-center text-xs text-gray-600">No information available for this pixel</p>
       )}
       </div>
-      
-      {/* Update Pixel Modal */}
-      {x !== undefined && y !== undefined && (
-        <UpdatePixelModal
-          x={x}
-          y={y}
-          isOpen={isUpdateModalOpen}
-          onClose={() => setIsUpdateModalOpen(false)}
-          onSuccess={() => {
-            // Refetch pixel data after successful update
-            const loadPixelData = async () => {
-              try {
-                setLoading(true);
-                const data = await fetchPixelData(x, y);
-                setPixelInfo(data);
-              } catch (err) {
-                console.error('Error reloading pixel data:', err);
-              } finally {
-                setLoading(false);
-              }
-            };
-            loadPixelData();
-          }}
-        />
-      )}
     </div>
   );
 }

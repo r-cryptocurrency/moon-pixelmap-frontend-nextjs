@@ -6,8 +6,9 @@ import { fetchPixelsData, updatePixel, PixelData } from '@/services/api';
 import { PIXEL_MAP_CONTRACT_CONFIG } from '@/config/contractConfig';
 
 interface UpdatePixelModalProps {
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
+  pixels?: { x: number; y: number }[];  // Support multi-pixel selection
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -23,6 +24,7 @@ interface OwnedPixel {
 export default function UpdatePixelModal({ 
   x, 
   y, 
+  pixels,
   isOpen, 
   onClose,
   onSuccess
@@ -42,38 +44,101 @@ export default function UpdatePixelModal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Determine if we're in multi-select mode
+  const isMultiSelectMode = pixels && pixels.length > 0;
+  const targetPixels = isMultiSelectMode ? pixels : (x !== undefined && y !== undefined ? [{ x, y }] : []);
+  const primaryPixel = targetPixels[0];
+
+  // Check if the contract address is available before attempting to use it.
+  const isContractAddressAvailable = !!PIXEL_MAP_CONTRACT_CONFIG.address;
+
   const { data: blockOwner, error: ownerError, isLoading: isLoadingOwner, refetch: refetchOwner } = useReadContract({
     ...PIXEL_MAP_CONTRACT_CONFIG,
     functionName: 'ownerOfBlock',
-    args: [BigInt(x), BigInt(y)],
+    args: primaryPixel ? [BigInt(primaryPixel.x), BigInt(primaryPixel.y)] : undefined,
     query: {
-        enabled: false, // Initially disabled, enabled by useEffect
+        // Only enable the query if the modal is open, user is connected, and contract address is available.
+        enabled: isOpen && isConnected && !!address && isContractAddressAvailable && !!primaryPixel,
     }
   });
 
   useEffect(() => {
+    // If the contract address is not available, set an error message and disable ownership-dependent features.
+    if (!isContractAddressAvailable) {
+      setError("Contract address is not configured. Pixel operations are disabled.");
+      setIsOwnerOfSelectedPixel(false);
+      setContiguousOwnedArea([]);
+      setShowAreaUpdatePrompt(false);
+      return; // Stop further execution in this effect if address is missing
+    }
+
     if (isOpen && isConnected && address) {
-        refetchOwner(); // Manually trigger fetch when modal opens and user is connected
+        refetchOwner(); 
     } else {
-        // Reset states if modal is closed or user disconnects
         setIsOwnerOfSelectedPixel(false);
         setContiguousOwnedArea([]);
         setShowAreaUpdatePrompt(false);
     }
-  }, [isOpen, isConnected, address, refetchOwner]);
+  }, [isOpen, isConnected, address, refetchOwner, isContractAddressAvailable]);
 
   useEffect(() => {
-    if (isOpen && isConnected && address && !isLoadingOwner) {
+    if (!isContractAddressAvailable) return; // Guard against missing contract address
+
+    if (isOpen && isConnected && address && !isLoadingOwner && primaryPixel) {
       if (blockOwner === address) {
         setIsOwnerOfSelectedPixel(true);
-        findContiguousArea(x, y, address);
+        if (isMultiSelectMode) {
+          // In multi-select mode, validate ownership of all pixels
+          validateMultiPixelOwnership(targetPixels, address);
+        } else {
+          // In single pixel mode, find contiguous area
+          findContiguousArea(primaryPixel.x, primaryPixel.y, address);
+        }
       } else {
         setIsOwnerOfSelectedPixel(false);
         setContiguousOwnedArea([]);
         setShowAreaUpdatePrompt(false);
       }
     }
-  }, [isOpen, isConnected, address, blockOwner, x, y, isLoadingOwner]); // Added isLoadingOwner
+  }, [isOpen, isConnected, address, blockOwner, primaryPixel?.x, primaryPixel?.y, isLoadingOwner, isMultiSelectMode]); // Added isLoadingOwner
+
+  const validateMultiPixelOwnership = async (pixels: OwnedPixel[], ownerAddress: string) => {
+    try {
+      const allPixels = await fetchPixelsData();
+      const pixelOwnerMap = new Map<string, string>();
+      allPixels.forEach(p => {
+        pixelOwnerMap.set(`${p.x},${p.y}`, p.owner.toLowerCase());
+      });
+      
+      // Check if user owns all selected pixels
+      const unownedPixels: OwnedPixel[] = [];
+      const ownedPixels: OwnedPixel[] = [];
+      
+      pixels.forEach(pixel => {
+        const key = `${pixel.x},${pixel.y}`;
+        const owner = pixelOwnerMap.get(key);
+        if (owner === ownerAddress.toLowerCase()) {
+          ownedPixels.push(pixel);
+        } else {
+          unownedPixels.push(pixel);
+        }
+      });
+      
+      if (unownedPixels.length > 0) {
+        setError(`You don't own ${unownedPixels.length} of the ${pixels.length} selected pixels. Only owned pixels will be updated.`);
+        setContiguousOwnedArea(ownedPixels);
+      } else {
+        setContiguousOwnedArea(ownedPixels);
+      }
+      
+      setShowAreaUpdatePrompt(ownedPixels.length > 1);
+      setUpdateScope(ownedPixels.length > 1 ? 'area' : 'single');
+    } catch (err) {
+      console.error("Error validating multi-pixel ownership:", err);
+      setError("Could not validate ownership of all selected pixels.");
+      setContiguousOwnedArea(pixels); // Fallback to attempting all
+    }
+  };
 
   const findContiguousArea = async (startX: number, startY: number, ownerAddress: string) => {
     try {
@@ -279,7 +344,7 @@ export default function UpdatePixelModal({
       setError('Wallet not connected');
       return;
     }
-    if (!isOwnerOfSelectedPixel && updateScope === 'single') { // Check ownership for single pixel update
+    if (!isOwnerOfSelectedPixel && updateScope === 'single') {
         setError('You do not own this pixel.');
         return;
     }
@@ -293,26 +358,74 @@ export default function UpdatePixelModal({
       return;
     }
     
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const pixelsToUpdate = updateScope === 'area' && contiguousOwnedArea.length > 0 
-        ? contiguousOwnedArea 
-        : [{ x, y }];
+    if (!primaryPixel) {
+      setError('No pixel selected.');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
 
-      for (const pixel of pixelsToUpdate) {
-        // The updatePixel service expects the image data (base64)
-        // For area updates, the same processedImageData (already scaled to the whole area) 
-        // is used as the URI for each individual pixel in the area.
-        await updatePixel(pixel.x, pixel.y, address, processedImageData); 
+    try {
+      if (updateScope === 'single') {
+        // For single pixel, processedImageData is already 10x10
+        await updatePixel(primaryPixel.x, primaryPixel.y, address as string, processedImageData);
+      } else if (updateScope === 'area' && contiguousOwnedArea.length > 0) {
+        // Load the processed image (which is scaled to the bounding box of the area)
+        const sourceImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('Failed to load processed image for area update.'));
+          img.src = processedImageData; // This is the base64 of the image scaled to the bounding box
+        });
+
+        // Determine bounding box top-left for relative coordinate calculation
+        const xs = contiguousOwnedArea.map(p => p.x);
+        const ys = contiguousOwnedArea.map(p => p.y);
+        const minXBlock = Math.min(...xs); // Top-left X in block coordinates
+        const minYBlock = Math.min(...ys); // Top-left Y in block coordinates
+
+        for (const pixel of contiguousOwnedArea) {
+          const cropCanvas = document.createElement('canvas');
+          cropCanvas.width = PIXEL_BLOCK_DIMENSION;
+          cropCanvas.height = PIXEL_BLOCK_DIMENSION;
+          const cropCtx = cropCanvas.getContext('2d');
+
+          if (!cropCtx) {
+            throw new Error('Failed to get 2D context for cropping canvas.');
+          }
+          cropCtx.imageSmoothingEnabled = false; // Keep pixel art sharp
+
+          // Calculate source (sx, sy) from the full scaled image (sourceImg)
+          // These are pixel coordinates on sourceImg
+          const sx = (pixel.x - minXBlock) * PIXEL_BLOCK_DIMENSION;
+          const sy = (pixel.y - minYBlock) * PIXEL_BLOCK_DIMENSION;
+
+          // Draw the 10x10 portion for the current pixel onto the cropCanvas
+          cropCtx.drawImage(
+            sourceImg,             // The image scaled to the bounding box
+            sx,                    // Source X on sourceImg (pixel coordinate)
+            sy,                    // Source Y on sourceImg (pixel coordinate)
+            PIXEL_BLOCK_DIMENSION, // Source width (10px block)
+            PIXEL_BLOCK_DIMENSION, // Source height (10px block)
+            0,                     // Destination X on cropCanvas (top-left)
+            0,                     // Destination Y on cropCanvas (top-left)
+            PIXEL_BLOCK_DIMENSION, // Destination width on cropCanvas
+            PIXEL_BLOCK_DIMENSION  // Destination height on cropCanvas
+          );
+
+          const individualPixelImageData = cropCanvas.toDataURL('image/png');
+          await updatePixel(pixel.x, pixel.y, address as string, individualPixelImageData);
+        }
       }
       
-      onSuccess();
-      handleClose();
+      onSuccess(); // Call after successful single or all area updates
+      handleClose(); // Close modal after success
+
     } catch (err) {
       console.error('Error updating pixel(s):', err);
       setError(err instanceof Error ? err.message : 'Failed to update pixel(s)');
+      // onSuccess and handleClose are not called in case of error
     } finally {
       setIsLoading(false);
     }
@@ -335,6 +448,14 @@ export default function UpdatePixelModal({
     ? `${areaDimensions.width * PIXEL_BLOCK_DIMENSION}x${areaDimensions.height * PIXEL_BLOCK_DIMENSION} Scaled Preview`
     : `10x10 Scaled Preview`;
   
+  // Calculate canvas dimensions based on selection
+  const canvasWidth = updateScope === 'area' && contiguousOwnedArea.length > 0
+    ? areaDimensions.width * PIXEL_BLOCK_DIMENSION
+    : PIXEL_BLOCK_DIMENSION;
+  const canvasHeight = updateScope === 'area' && contiguousOwnedArea.length > 0
+    ? areaDimensions.height * PIXEL_BLOCK_DIMENSION
+    : PIXEL_BLOCK_DIMENSION;
+  
   const buttonText = isLoading 
     ? 'Updating...' 
     : `Update ${updateScope === 'area' && contiguousOwnedArea.length > 1 ? `${contiguousOwnedArea.length} Pixels` : 'Pixel'}`;
@@ -355,40 +476,56 @@ export default function UpdatePixelModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg my-8"> {/* Added my-8 for vertical margin on scroll */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}>
+      <div 
+        className="relative w-full max-w-lg my-8 rounded-lg shadow-2xl p-6"
+        style={{ 
+          backgroundColor: 'rgb(255, 255, 255)',
+          border: '2px solid rgb(229, 231, 235)'
+        }}
+      >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">Update Pixel ({x}, {y})</h3>
-          <button onClick={handleClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+          <h3 className="text-xl font-semibold" style={{ color: 'rgb(17, 24, 39)' }}>
+            {isMultiSelectMode 
+              ? `Update ${targetPixels.length} Pixel${targetPixels.length > 1 ? 's' : ''}` 
+              : `Update Pixel (${primaryPixel?.x}, ${primaryPixel?.y})`}
+          </h3>
+          <button 
+            onClick={handleClose} 
+            className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+            style={{ lineHeight: '1' }}
+          >
+            &times;
+          </button>
         </div>
 
-        {(isLoadingOwner || (isOpen && !address)) && <p className="text-sm text-gray-600 mb-2">Loading ownership details...</p>}
+        {(isLoadingOwner || (isOpen && !address)) && <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Loading ownership details...</p>}
         {ownerError && <p className="text-red-500 mb-2">Error checking ownership: {ownerError.message}</p>}
         
-        {isOpen && address && !isLoadingOwner && !isOwnerOfSelectedPixel && (
-            <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 text-sm rounded">
-                You do not own the selected pixel ({x}, {y}).
+        {isOpen && address && !isLoadingOwner && !isOwnerOfSelectedPixel && primaryPixel && (
+            <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-700 dark:bg-opacity-30 text-yellow-700 dark:text-yellow-200 text-sm rounded">
+                You do not own the selected pixel{isMultiSelectMode && targetPixels.length > 1 ? 's' : ''} ({primaryPixel.x}, {primaryPixel.y}).
             </div>
         )}
 
         {isOwnerOfSelectedPixel && (
           <>
             {showAreaUpdatePrompt && contiguousOwnedArea.length > 1 && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-sm text-blue-700 mb-2">
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900 dark:bg-opacity-30 border border-blue-200 dark:border-blue-700 rounded-md">
+                <p className="text-sm text-blue-700 dark:text-blue-200 mb-2">
                   You own a contiguous area of <strong>{contiguousOwnedArea.length} pixels</strong> (dimensions: {areaDimensions.width}x{areaDimensions.height} blocks). 
                   Update the single selected pixel ({x},{y}) or the entire area?
                 </p>
                 <div className="flex space-x-2">
                   <button 
                     onClick={() => handleScopeChange('single')}
-                    className={`px-3 py-1 text-sm rounded ${updateScope === 'single' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    className={`px-3 py-1 text-sm rounded ${updateScope === 'single' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200'}`}
                   >
                     Single ({x},{y})
                   </button>
                   <button 
                     onClick={() => handleScopeChange('area')}
-                    className={`px-3 py-1 text-sm rounded ${updateScope === 'area' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                    className={`px-3 py-1 text-sm rounded ${updateScope === 'area' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200'}`}
                   >
                     All {contiguousOwnedArea.length} Pixels ({areaDimensions.width}x{areaDimensions.height})
                   </button>
@@ -397,7 +534,7 @@ export default function UpdatePixelModal({
             )}
 
             <div className="mb-4">
-              <label htmlFor="pixelImageUpload" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="pixelImageUpload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Upload Image {updateScope === 'area' && contiguousOwnedArea.length > 0 ? `(for ${areaDimensions.width}x${areaDimensions.height} area)` : '(for 10x10 pixel)'}
               </label>
               <input 
@@ -406,35 +543,47 @@ export default function UpdatePixelModal({
                 type="file"
                 accept="image/png, image/jpeg, image/bmp, image/gif"
                 onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-700 file:text-blue-700 dark:file:text-blue-100 hover:file:bg-blue-100 dark:hover:file:bg-blue-600"
               />
-              {fileName && <p className="text-xs text-gray-500 mt-1">Selected: {fileName}</p>}
+              {fileName && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Selected: {fileName}</p>}
             </div>
 
             {originalImageSrc && (
               <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 mb-1">Original Preview:</p>
-                <img src={originalImageSrc} alt="Original Uploaded Preview" className="max-w-full h-auto max-h-40 border border-gray-300 object-contain" />
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Original Preview:</p>
+                <img src={originalImageSrc} alt="Original Uploaded Preview" className="max-w-full h-auto max-h-40 border border-gray-300 dark:border-gray-600 object-contain bg-white" />
               </div>
             )}
             
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{previewCanvasLabel}</label>
-              <div className="border border-gray-300 inline-block">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{previewCanvasLabel}</label>
+              <div className="border border-gray-300 dark:border-gray-600 inline-block bg-gray-100 dark:bg-gray-700">
                 <canvas 
                   ref={canvasRef}
-                  width={100} 
-                  height={100}
-                  className="w-24 h-24 md:w-32 md:h-32 bg-gray-100" // CSS can be larger for better preview
+                  width={canvasWidth} 
+                  height={canvasHeight}
+                  className="max-w-full h-auto"
+                  style={{
+                    width: `${Math.min(canvasWidth * 3, 300)}px`,
+                    height: `${Math.min(canvasHeight * 3, 300)}px`,
+                    imageRendering: 'pixelated'
+                  }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">This image ({updateScope === 'area' && contiguousOwnedArea.length > 0 ? `${areaDimensions.width*PIXEL_BLOCK_DIMENSION}x${areaDimensions.height*PIXEL_BLOCK_DIMENSION}px` : '10x10px'}) will be saved to the blockchain.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                This image ({canvasWidth}x{canvasHeight}px) will be saved to the blockchain.
+                {updateScope === 'area' && contiguousOwnedArea.length > 1 && (
+                  <span className="block mt-1 font-semibold text-blue-600">
+                    Covering {contiguousOwnedArea.length} pixel blocks ({areaDimensions.width}×{areaDimensions.height} grid)
+                  </span>
+                )}
+              </p>
             </div>
           </>
         )}
         
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 text-sm rounded">
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-700 dark:bg-opacity-30 text-red-700 dark:text-red-200 text-sm rounded">
             {error}
           </div>
         )}
@@ -443,7 +592,7 @@ export default function UpdatePixelModal({
           <button
             onClick={handleClose}
             disabled={isLoading} // Only disable cancel if a destructive action is unstoppable
-            className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+            className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-500 rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             Cancel
           </button>

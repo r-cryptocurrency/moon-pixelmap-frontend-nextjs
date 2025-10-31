@@ -8,7 +8,8 @@ const csp = [
   "connect-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://*.reown.com " +
     "https://api.web3modal.org " + // Added for Web3Modal API
     "https://polygon-mainnet.g.alchemy.com https://*.infura.io " +
-    "https://ethereum-mainnet.publicnode.com wss://*.walletconnect.org wss://*.walletconnect.com " +
+    "https://ethereum-mainnet.publicnode.com https://nova.arbitrum.io " + // Added Arbitrum Nova RPC
+    "wss://*.walletconnect.org wss://*.walletconnect.com " +
     "ws://localhost:* http://localhost:* https://localhost:*",
   // Inline styles are required for Web3Modal
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
