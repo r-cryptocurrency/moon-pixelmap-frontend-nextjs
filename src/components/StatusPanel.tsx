@@ -57,7 +57,7 @@ export default function StatusPanel({
                 ) : pixelsError ? (
                   <div className="text-red-500">Error loading pixels</div>
                 ) : (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
                     <span className="text-gray-700">Your pixels:</span>
                     <span className="font-bold text-blue-700">{ownedPixelsCount !== null ? ownedPixelsCount : '-'}</span>
                   </div>

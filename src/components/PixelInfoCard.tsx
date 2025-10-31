@@ -102,12 +102,12 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
       <div className="p-2.5">
       
       {pixelInfo ? (
-        <div className="space-y-1.5 text-[10px]">
+        <div className="space-y-1.5 text-xs">
           <div className="flex justify-between">
             <span className="text-gray-600">Owner:</span>
             <div className="flex items-center">
               {isOwner && (
-                <span className="bg-green-100 text-green-800 text-[9px] font-medium mr-1 px-1 py-0.5 rounded-sm">
+                <span className="bg-green-100 text-green-800 text-[10px] font-medium mr-1 px-1 py-0.5 rounded-sm">
                   You
                 </span>
               )}
@@ -139,8 +139,8 @@ export default function PixelInfoCard({ x, y, className = '' }: PixelInfoCardPro
           
           {pixelInfo.metadata && Object.keys(pixelInfo.metadata).length > 0 && (
             <div className="mt-3">
-              <div className="text-gray-600 mb-1 text-[10px]">Metadata:</div>
-              <pre className="bg-gray-100 p-2 rounded-md text-[9px] text-gray-700 overflow-auto max-h-32 border border-gray-300 shadow-inner">
+              <div className="text-gray-600 mb-1 text-xs">Metadata:</div>
+              <pre className="bg-gray-100 p-2 rounded-md text-[10px] text-gray-700 overflow-auto max-h-32 border border-gray-300 shadow-inner">
                 {JSON.stringify(pixelInfo.metadata, null, 2)}
               </pre>
             </div>
