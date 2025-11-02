@@ -95,16 +95,23 @@ export default function ChatDisplayArea({ className = '' }: { className?: string
           </div>
         ) : (
           messages.map((msg, index) => (
-            <div key={msg.id} className={`py-0.5 ${index < messages.length - 1 ? 'border-b border-gray-200' : ''}`}>
-              <div className="bg-gray-200 bg-opacity-60 rounded px-1.5 py-0.5 backdrop-blur-sm">
-                <div className="flex items-start gap-1">
-                  <span className="text-gray-600 text-[9px] whitespace-nowrap flex-shrink-0">
+            <div key={msg.id} className={`py-1 ${index < messages.length - 1 ? 'border-b border-gray-200' : ''}`}>
+              <div className="bg-gray-200 bg-opacity-60 rounded px-2 py-1 backdrop-blur-sm">
+                <div className="text-xs leading-relaxed">
+                  <span style={{ color: '#6B7280', marginRight: '8px' }}>
                     {formatTime(msg.timestamp)}
                   </span>
-                  <span className={`text-xs font-bold font-mono flex-shrink-0 ${msg.fullAddress?.toLowerCase() === address?.toLowerCase() ? 'text-green-700' : 'text-blue-700'}`}>
+                  <span 
+                    style={{ 
+                      fontWeight: 'bold', 
+                      fontFamily: 'monospace',
+                      color: msg.fullAddress?.toLowerCase() === address?.toLowerCase() ? '#15803d' : '#1d4ed8',
+                      marginRight: '4px'
+                    }}
+                  >
                     {msg.user}:
                   </span>
-                  <p className="text-gray-800 text-xs leading-tight break-words flex-1">{msg.message}</p>
+                  <span style={{ color: '#1f2937' }}>{msg.message}</span>
                 </div>
               </div>
             </div>
