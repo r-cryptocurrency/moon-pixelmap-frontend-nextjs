@@ -26,17 +26,19 @@ export default function Home() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 p-2 md:p-4 h-[calc(100vh-8rem)] mx-auto w-full max-w-[1800px]">
-      {/* Main pixel map - full width on mobile, 2/3 on desktop */}
-      <PixelMapArea 
-        className="lg:col-span-2 h-[40vh] lg:h-full overflow-hidden" 
-        onPixelSelect={handlePixelSelect}
-        onAreaSelect={handleAreaSelect}
-        selectionMode={selectionMode}
-      />
+    <div className="flex flex-col lg:flex-row gap-2 p-2 md:p-4 h-[calc(100vh-8rem)] mx-auto w-full max-w-[1800px]">
+      {/* Main pixel map - full width on mobile, takes remaining space on desktop */}
+      <div className="flex-1 lg:flex-[2] h-[40vh] lg:h-full">
+        <PixelMapArea 
+          className="w-full h-full overflow-hidden" 
+          onPixelSelect={handlePixelSelect}
+          onAreaSelect={handleAreaSelect}
+          selectionMode={selectionMode}
+        />
+      </div>
       
-      {/* Side panel - stacks below on mobile */}
-      <div className="lg:col-span-1 h-auto lg:h-full flex flex-col gap-1 overflow-y-auto">
+      {/* Side panel - stacks below on mobile, fixed width on desktop */}
+      <div className="lg:w-[400px] h-auto lg:h-full flex flex-col gap-1 overflow-y-auto">
         {/* Map Control Panel */}
         <div className="panel p-2 lg:p-3">
           <h3 className="text-[10px] lg:text-xs font-bold mb-1 lg:mb-2 text-gray-700 dark:text-gray-300">MAP CONTROLS</h3>
