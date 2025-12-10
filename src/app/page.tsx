@@ -26,9 +26,9 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-2 p-2 md:p-4 h-[calc(100vh-8rem)] mx-auto w-full max-w-[1800px]">
+    <div className="main-layout">
       {/* Main pixel map - full width on mobile, takes remaining space on desktop */}
-      <div className="flex-grow min-w-0 h-[50vh] md:h-full">
+      <div className="map-container">
         <PixelMapArea 
           className="w-full h-full overflow-hidden" 
           onPixelSelect={handlePixelSelect}
@@ -38,7 +38,7 @@ export default function Home() {
       </div>
       
       {/* Side panel - stacks below on mobile, fixed width on desktop */}
-      <div className="w-full md:w-[350px] md:flex-shrink-0 h-auto md:h-full flex flex-col gap-1 overflow-y-auto">
+      <div className="side-panel">
         {/* Map Control Panel */}
         <div className="panel p-2 md:p-3">
           <h3 className="text-[10px] md:text-xs font-bold mb-1 md:mb-2 text-gray-700 dark:text-gray-300">MAP CONTROLS</h3>
