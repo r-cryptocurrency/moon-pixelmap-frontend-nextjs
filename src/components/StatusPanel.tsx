@@ -2,8 +2,7 @@
 
 import PixelInfoCard from './PixelInfoCard';
 import { useUserPixels } from '@/hooks/useUserPixels';
-import { useAppKitContext } from '@/app/providers';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount, useDisconnect, useConnect } from 'wagmi';
 import { useEffect, useState } from 'react';
 
 interface StatusPanelProps {
@@ -15,9 +14,9 @@ export default function StatusPanel({
   className = '', 
   selectedPixel
 }: StatusPanelProps) {
-  const appKit = useAppKitContext();
   const { address, isConnected, isConnecting, isReconnecting } = useAccount();
   const { disconnect } = useDisconnect();
+  const { connect, connectors, isPending } = useConnect();
   const { loading: loadingPixels, ownedPixelsCount, error: pixelsError } = useUserPixels();
 
   const [displayAddress, setDisplayAddress] = useState('');
@@ -78,15 +77,21 @@ export default function StatusPanel({
                 <span className="text-gray-800 text-[10px]">Not connected</span>
               </div>
               <button 
-                onClick={() => appKit?.open()}
-                disabled={isLoadingConnection || !appKit}
+                onClick={() => {
+                  // Connect using first available injected connector (MetaMask, Brave, etc.)
+                  const injectedConnector = connectors.find(c => c.type === 'injected');
+                  if (injectedConnector) {
+                    connect({ connector: injectedConnector });
+                  }
+                }}
+                disabled={isLoadingConnection || isPending || connectors.length === 0}
                 className={`hover-enhanced bg-gradient-to-r ${
-                  isLoadingConnection || !appKit 
+                  isLoadingConnection || isPending
                     ? 'from-gray-400 to-gray-500' 
                     : 'from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800'
                 } text-white py-1 px-2 rounded text-[10px] shadow flex items-center justify-center w-full`}
               >
-                {isLoadingConnection ? (
+                {isLoadingConnection || isPending ? (
                   <>
                     <div className="animate-spin mr-1 h-2 w-2 border border-t-2 border-white rounded-full"></div>
                     <span>Connecting...</span>
