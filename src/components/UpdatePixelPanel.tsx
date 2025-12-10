@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useSwitchChain } from 'wagmi';
+import { PIXEL_MAP_CONTRACT_CONFIG } from '@/config/contractConfig';
+import { arbitrumNova } from 'wagmi/chains';
 
 interface UpdatePixelPanelProps {
   className?: string;
@@ -14,13 +16,21 @@ export default function UpdatePixelPanel({
   selectedPixels,
   onClose 
 }: UpdatePixelPanelProps) {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chain } = useAccount();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [txStatus, setTxStatus] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Wagmi hooks for contract interaction
+  const { writeContract, data: txHash, isPending: isWritePending, error: writeError } = useWriteContract();
+  const { switchChain } = useSwitchChain();
+  const { isLoading: isTxLoading, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
 
   // Image validation constants
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -40,7 +50,8 @@ export default function UpdatePixelPanel({
   const canvasWidth = areaDimensions.width * 10;
   const canvasHeight = areaDimensions.height * 10;
 
-  // Validate ownership
+  // TODO: Re-enable when batch blockchain updates are implemented
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const validateMultiPixelOwnership = async (): Promise<boolean> => {
     if (!address) {
       alert('Please connect your wallet');
@@ -127,96 +138,93 @@ export default function UpdatePixelPanel({
     reader.readAsDataURL(file);
   };
 
+  // Handle transaction success
+  useEffect(() => {
+    if (isTxSuccess && txHash) {
+      setTxStatus('Transaction confirmed!');
+      setUploading(false);
+      
+      // Clear the form
+      setImageFile(null);
+      setImagePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+      // Refresh the map
+      window.dispatchEvent(new CustomEvent('pixelsUpdated'));
+      
+      // Clear selection after delay
+      setTimeout(() => {
+        setTxStatus('');
+        if (onClose) onClose();
+      }, 2000);
+    }
+  }, [isTxSuccess, txHash, onClose]);
+
+  // Handle write errors
+  useEffect(() => {
+    if (writeError) {
+      console.error('Contract write error:', writeError);
+      setTxStatus(`Error: ${writeError.message.substring(0, 100)}`);
+      setUploading(false);
+    }
+  }, [writeError]);
+
   const handleUpload = async () => {
     if (!imageFile || !isConnected || !address || !canvasRef.current) {
       alert('Please connect wallet and select an image');
       return;
     }
 
-    // Validate ownership for multi-pixel
+    // Check if on correct chain
+    if (chain?.id !== arbitrumNova.id) {
+      setTxStatus('Switching to Arbitrum Nova...');
+      try {
+        switchChain({ chainId: arbitrumNova.id });
+        // Wait a bit for chain switch
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (err) {
+        console.error('Failed to switch chain:', err);
+        setTxStatus('Please switch to Arbitrum Nova network');
+        return;
+      }
+    }
+
+    // For now, only support single pixel updates via blockchain
+    // Multi-pixel batch updates would need a different contract function or multiple transactions
     if (!isSinglePixel) {
-      const isOwner = await validateMultiPixelOwnership();
-      if (!isOwner) return;
+      alert('Blockchain updates currently only support single pixel updates. Please select one pixel at a time.');
+      return;
     }
 
     setUploading(true);
+    setTxStatus('Preparing image...');
 
     try {
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        throw new Error('Could not get canvas context');
-      }
+      // Get the image as a base64 data URI - this IS the tokenURI stored on-chain
+      const tokenURI = canvas.toDataURL('image/png');
+      
+      const pixel = selectedPixels[0];
+      
+      console.log(`Updating pixel (${pixel.x}, ${pixel.y}) with ${tokenURI.length} byte image`);
+      setTxStatus('Waiting for wallet signature...');
 
-      // Split the image into individual pixel tiles
-      const pixelSize = 10; // Each pixel is rendered as 10x10 on canvas
-      const pixelsWithImages = selectedPixels.map(pixel => {
-        // Calculate the position of this pixel within the selected area
-        const localX = pixel.x - areaDimensions.minX;
-        const localY = pixel.y - areaDimensions.minY;
-        
-        // Extract this pixel's portion from the canvas
-        const tileCanvas = document.createElement('canvas');
-        tileCanvas.width = pixelSize;
-        tileCanvas.height = pixelSize;
-        const tileCtx = tileCanvas.getContext('2d');
-        
-        if (tileCtx) {
-          // Copy the pixel's portion from main canvas
-          tileCtx.drawImage(
-            canvas,
-            localX * pixelSize, localY * pixelSize, pixelSize, pixelSize, // source
-            0, 0, pixelSize, pixelSize // destination
-          );
-        }
-        
-        return {
-          x: pixel.x,
-          y: pixel.y,
-          image: tileCanvas.toDataURL('image/png')
-        };
+      // Call the smart contract's update function directly with the base64 data URI
+      writeContract({
+        address: PIXEL_MAP_CONTRACT_CONFIG.address as `0x${string}`,
+        abi: PIXEL_MAP_CONTRACT_CONFIG.abi,
+        functionName: 'update',
+        args: [BigInt(pixel.x), BigInt(pixel.y), tokenURI],
+        chainId: arbitrumNova.id,
       });
 
-      console.log(`Uploading ${pixelsWithImages.length} pixels with individual 10x10px images`);
-
-      // Send as JSON with individual images per pixel
-      const response = await fetch('/api/pixels-update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          address,
-          pixels: pixelsWithImages,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success || response.ok) {
-        alert(`Image uploaded successfully! Updated ${selectedPixels.length} pixel(s)`);
-        
-        // Clear the uploaded image and reset preview
-        setImageFile(null);
-        setImagePreview(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        
-        // Refresh the map by triggering a re-render
-        window.dispatchEvent(new CustomEvent('pixelsUpdated'));
-        
-        // Clear selection after a brief delay to let user see the result
-        setTimeout(() => {
-          if (onClose) onClose();
-        }, 500);
-      } else {
-        alert(`Upload failed: ${data.error || 'Unknown error'}`);
-      }
+      setTxStatus('Transaction submitted, waiting for confirmation...');
+      
     } catch (error) {
       console.error('Error uploading:', error);
-      alert('Error uploading image');
-    } finally {
+      setTxStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setUploading(false);
     }
   };
@@ -323,9 +331,38 @@ export default function UpdatePixelPanel({
           </div>
         )}
 
+        {/* Transaction Status */}
+        {txStatus && (
+          <div className={`mb-3 p-2 rounded text-xs ${
+            txStatus.includes('Error') 
+              ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+              : txStatus.includes('confirmed')
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                : 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300'
+          }`}>
+            {isTxLoading && <span className="inline-block animate-spin mr-1">⏳</span>}
+            {txStatus}
+            {txHash && (
+              <div className="mt-1 text-[9px] font-mono break-all">
+                <a 
+                  href={`https://nova.arbiscan.io/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View on Explorer →
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Info Text */}
         <div className="text-[10px] text-gray-600 dark:text-gray-400">
-          This image will be saved to the blockchain.
+          {isSinglePixel 
+            ? 'This will upload to IPFS and update on the blockchain. You will need to sign a transaction.'
+            : '⚠️ Multi-pixel blockchain updates coming soon. Currently only single pixel updates are supported.'
+          }
         </div>
       </div>
 
@@ -334,17 +371,18 @@ export default function UpdatePixelPanel({
         {onClose && (
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-3 rounded text-xs font-semibold transition-colors"
+            disabled={uploading || isWritePending || isTxLoading}
+            className="flex-1 bg-gray-300 hover:bg-gray-400 disabled:bg-gray-200 text-gray-800 py-2 px-3 rounded text-xs font-semibold transition-colors"
           >
             Cancel
           </button>
         )}
         <button
           onClick={handleUpload}
-          disabled={!imageFile || uploading || !isConnected}
+          disabled={!imageFile || uploading || !isConnected || isWritePending || isTxLoading || !isSinglePixel}
           className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-2 px-3 rounded text-xs font-semibold transition-colors disabled:cursor-not-allowed"
         >
-          {uploading ? 'Uploading...' : (isSinglePixel ? 'Update Pixel' : 'Update Pixels')}
+          {isWritePending ? 'Check Wallet...' : isTxLoading ? 'Confirming...' : uploading ? 'Preparing...' : 'Update on Blockchain'}
         </button>
       </div>
     </div>
