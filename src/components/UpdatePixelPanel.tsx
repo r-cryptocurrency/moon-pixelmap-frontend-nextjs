@@ -292,17 +292,17 @@ export default function UpdatePixelPanel({
         }
       }
 
-      // Final status
+      // Final status - let user know map will refresh shortly
       if (failCount === 0) {
-        setTxStatus(`✅ All ${successCount} pixels updated successfully!`);
+        setTxStatus(`✅ All ${successCount} pixels updated! Map will refresh in ~12s...`);
       } else {
-        setTxStatus(`⚠️ ${successCount} succeeded, ${failCount} failed`);
+        setTxStatus(`⚠️ ${successCount} succeeded, ${failCount} failed. Map refreshing in ~12s...`);
       }
 
-      // Refresh the map
+      // Trigger map refresh (PixelMapViewer will wait for backend to process)
       window.dispatchEvent(new CustomEvent('pixelsUpdated'));
 
-      // Clear form after delay
+      // Clear form after longer delay to match the map refresh timing
       setTimeout(() => {
         if (failCount === 0) {
           setImageFile(null);
@@ -313,7 +313,7 @@ export default function UpdatePixelPanel({
         }
         setTxStatus('');
         setUploading(false);
-      }, 3000);
+      }, 13000); // Wait slightly longer than map refresh delay
 
     } catch (error) {
       console.error('Error in batch upload:', error);

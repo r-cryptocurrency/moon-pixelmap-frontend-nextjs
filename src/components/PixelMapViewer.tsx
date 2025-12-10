@@ -130,9 +130,14 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     loadPixelMap(false); // Initial load, center the map
     
     // Listen for pixel update events to refresh the map
+    // Add delay to allow backend to process the blockchain event (polls every 10s)
     const handlePixelsUpdated = () => {
-      console.log('Pixels updated, refreshing map...');
-      loadPixelMap(true); // Preserve position on refresh
+      console.log('Pixels updated event received, waiting for backend to process...');
+      // Wait 12 seconds to ensure backend has processed the event (10s poll interval + buffer)
+      setTimeout(() => {
+        console.log('Refreshing map after delay...');
+        loadPixelMap(true); // Preserve position on refresh
+      }, 12000);
     };
     
     window.addEventListener('pixelsUpdated', handlePixelsUpdated);
