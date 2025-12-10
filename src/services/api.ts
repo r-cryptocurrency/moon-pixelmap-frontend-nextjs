@@ -117,7 +117,7 @@ export async function updatePixel(
   y: number, 
   address: string,
   imageData: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): Promise<PixelData> {
   try {
     // Use the frontend API route which will validate and forward to backend
@@ -167,5 +167,5 @@ export interface PixelData {
   color?: string;
   lastUpdated?: string;
   uri?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
