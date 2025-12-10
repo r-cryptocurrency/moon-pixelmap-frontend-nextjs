@@ -26,19 +26,19 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-3 gap-2 p-2 md:p-4 h-[calc(100vh-10rem)] max-h-[calc(100vh-10rem)] mx-auto w-full max-w-[1800px] overflow-hidden">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 p-2 md:p-4 h-[calc(100vh-8rem)] mx-auto w-full max-w-[1800px]">
       {/* Main pixel map - full width on mobile, 2/3 on desktop */}
       <PixelMapArea 
-        className="lg:col-span-2 h-[50vh] lg:h-full max-h-full overflow-hidden flex-shrink-0" 
+        className="lg:col-span-2 h-[40vh] lg:h-full overflow-hidden" 
         onPixelSelect={handlePixelSelect}
         onAreaSelect={handleAreaSelect}
         selectionMode={selectionMode}
       />
       
       {/* Side panel - stacks below on mobile */}
-      <div className="lg:col-start-3 flex-1 lg:h-full lg:max-h-full grid grid-cols-2 lg:grid-cols-1 lg:grid-rows-[auto_auto_auto_1fr_auto] gap-1 overflow-hidden">
+      <div className="lg:col-span-1 h-auto lg:h-full flex flex-col gap-1 overflow-y-auto">
         {/* Map Control Panel */}
-        <div className="col-span-2 lg:col-span-1 lg:row-start-1 panel p-2 lg:p-3">
+        <div className="panel p-2 lg:p-3">
           <h3 className="text-[10px] lg:text-xs font-bold mb-1 lg:mb-2 text-gray-700 dark:text-gray-300">MAP CONTROLS</h3>
           <div className="flex flex-row lg:flex-col gap-1 lg:gap-2">
             <button
@@ -82,18 +82,18 @@ export default function Home() {
         </div>
         
         <StatusPanel
-          className="col-span-1 lg:col-span-1 lg:row-start-2 overflow-y-auto"
+          className=""
           selectedPixel={selectedPixel}
         />
         
         <UpdatePixelPanel
-          className="col-span-1 lg:col-span-1 lg:row-start-3 overflow-y-auto"
+          className=""
           selectedPixels={selectedPixels}
           onClose={handleClearSelection}
         />
         
-        <ChatDisplay className="col-span-2 lg:col-span-1 lg:row-start-4 overflow-y-auto min-h-[60px] max-h-[150px] lg:max-h-none" />
-        <ChatInput className="col-span-2 lg:col-span-1 lg:row-start-5" />
+        <ChatDisplay className="flex-1 min-h-[100px] overflow-y-auto" />
+        <ChatInput className="" />
       </div>
     </div>
   );
