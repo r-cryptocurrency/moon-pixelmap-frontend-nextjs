@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect, ChangeEvent } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo, ChangeEvent } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 import { PIXEL_MAP_CONTRACT_CONFIG } from '@/config/contractConfig';
 
