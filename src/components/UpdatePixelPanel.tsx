@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useAccount, useWriteContract, useSwitchChain, usePublicClient } from 'wagmi';
+import { useAccount, useWriteContract, useSwitchChain, usePublicClient, useChainId } from 'wagmi';
 import { PIXEL_MAP_CONTRACT_CONFIG } from '@/config/contractConfig';
 import { arbitrumNova } from 'wagmi/chains';
 
@@ -38,8 +38,9 @@ export default function UpdatePixelPanel({
 
   // Wagmi hooks for contract interaction
   const { writeContractAsync } = useWriteContract();
-  const { switchChain } = useSwitchChain();
+  const { switchChainAsync } = useSwitchChain();
   const publicClient = usePublicClient();
+  const currentChainId = useChainId();
 
   // Image validation constants
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -237,15 +238,23 @@ export default function UpdatePixelPanel({
       return;
     }
 
-    // Check if on correct chain
-    if (chain?.id !== arbitrumNova.id) {
+    // Check if on correct chain and wait for switch to complete
+    if (currentChainId !== arbitrumNova.id) {
       setTxStatus('Switching to Arbitrum Nova...');
       try {
-        switchChain({ chainId: arbitrumNova.id });
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await switchChainAsync({ chainId: arbitrumNova.id });
+        // Wait a bit for the wallet to fully update
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Verify the chain actually switched
+        if (chain?.id !== arbitrumNova.id) {
+          setTxStatus('Please confirm the network switch in your wallet, then try again');
+          setUploading(false);
+          return;
+        }
       } catch (err) {
         console.error('Failed to switch chain:', err);
-        setTxStatus('Please switch to Arbitrum Nova network');
+        setTxStatus('Please switch to Arbitrum Nova network in your wallet');
+        setUploading(false);
         return;
       }
     }
