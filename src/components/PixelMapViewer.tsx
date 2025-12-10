@@ -70,6 +70,25 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     return () => clearInterval(animationInterval);
   }, []);
   
+  // Center the pixel map in the canvas
+  const centerMap = useCallback(() => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    
+    // Calculate the position to center the map
+    const mapWidth = PIXEL_MAP_SIZE * pixelSize;
+    const mapHeight = PIXEL_MAP_SIZE * pixelSize;
+    
+    // Ensure the map is centered
+    const centerX = Math.max(0, (canvasWidth - mapWidth) / 2);
+    const centerY = Math.max(0, (canvasHeight - mapHeight) / 2);
+    
+    setPan({ x: centerX, y: centerY });
+  }, [pixelSize]);
+
   // Initialize the pixel map
   useEffect(() => {
     const loadPixelMap = async (preservePosition = false) => {
@@ -161,25 +180,7 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     setHighlightedPixelBorders(borders);
   };
   
-  // Center the pixel map in the canvas
-  const centerMap = useCallback(() => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    
-    // Calculate the position to center the map
-    const mapWidth = PIXEL_MAP_SIZE * pixelSize;
-    const mapHeight = PIXEL_MAP_SIZE * pixelSize;
-    
-    // Ensure the map is centered
-    const centerX = Math.max(0, (canvasWidth - mapWidth) / 2);
-    const centerY = Math.max(0, (canvasHeight - mapHeight) / 2);
-    
-    setPan({ x: centerX, y: centerY });
-  }, [pixelSize]);
-  
+
   // Draw the pixel map when image is loaded or when pan/zoom changes
   useEffect(() => {
     if (!canvasRef.current || !imageObj || loading) return;
