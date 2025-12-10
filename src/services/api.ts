@@ -4,6 +4,15 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+// Backend pixel response format
+interface BackendPixel {
+  x: number;
+  y: number;
+  current_owner?: string;
+  uri?: string;
+  timestamp?: string;
+}
+
 /**
  * Fetch the pixel map image
  * @returns Promise with the image blob
@@ -39,14 +48,6 @@ export async function fetchPixelsData(): Promise<Array<PixelData>> {
     
     if (!response.ok) {
       throw new Error(`Failed to fetch pixels data: ${response.status} ${response.statusText}`);
-    }
-    
-    interface BackendPixel {
-      x: number;
-      y: number;
-      current_owner?: string;
-      uri?: string;
-      timestamp?: string;
     }
     
     const data: BackendPixel[] = await response.json();

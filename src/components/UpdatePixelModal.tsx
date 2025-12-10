@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo, ChangeEvent } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 import { PIXEL_MAP_CONTRACT_CONFIG } from '@/config/contractConfig';
+import { fetchPixelsData, updatePixel } from '@/services/api';
 
 interface UpdatePixelModalProps {
   x?: number;
@@ -200,6 +201,16 @@ export default function UpdatePixelModal({
       // setIsLoading(false);
     }
   };
+
+  const getAreaDimensions = useCallback(() => {
+    if (contiguousOwnedArea.length === 0) return { width: 1, height: 1};
+    const xs = contiguousOwnedArea.map(p => p.x);
+    const ys = contiguousOwnedArea.map(p => p.y);
+    return {
+        width: Math.max(...xs) - Math.min(...xs) + 1,
+        height: Math.max(...ys) - Math.min(...ys) + 1,
+    };
+  }, [contiguousOwnedArea]);
   
   const handleClose = () => {
     if (!isLoading) {
@@ -431,16 +442,6 @@ export default function UpdatePixelModal({
   };
     
   // if (!isOpen) return null; // Moved to bottom to avoid conditional hook call
-  
-  const getAreaDimensions = useCallback(() => {
-    if (contiguousOwnedArea.length === 0) return { width: 1, height: 1};
-    const xs = contiguousOwnedArea.map(p => p.x);
-    const ys = contiguousOwnedArea.map(p => p.y);
-    return {
-        width: Math.max(...xs) - Math.min(...xs) + 1,
-        height: Math.max(...ys) - Math.min(...ys) + 1,
-    };
-  }, [contiguousOwnedArea]);
 
   const areaDimensions = getAreaDimensions();
   const previewCanvasLabel = updateScope === 'area' && contiguousOwnedArea.length > 0 
