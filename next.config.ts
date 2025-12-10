@@ -9,6 +9,7 @@ const csp = [
     "https://api.web3modal.org " + // Added for Web3Modal API
     "https://polygon-mainnet.g.alchemy.com https://*.infura.io " +
     "https://ethereum-mainnet.publicnode.com https://nova.arbitrum.io " + // Added Arbitrum Nova RPC
+    "https://backend.moonplace.io wss://backend.moonplace.io " + // Backend API and WebSocket
     "wss://*.walletconnect.org wss://*.walletconnect.com " +
     "ws://localhost:* http://localhost:* https://localhost:*",
   // Inline styles are required for Web3Modal
