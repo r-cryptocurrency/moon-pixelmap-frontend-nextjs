@@ -17,7 +17,7 @@ interface ChatWebSocketContextType {
   connecting: boolean;
   error: string | null;
   rateLimited: boolean;
-  sendMessage: (text: string, address: string | null) => void;
+  sendMessage: (text: string, address: string | null | undefined) => void;
 }
 
 const ChatWebSocketContext = createContext<ChatWebSocketContextType | null>(null);
@@ -126,7 +126,7 @@ export function ChatWebSocketProvider({ children }: ChatWebSocketProviderProps) 
     }
   }, []);
 
-  const sendMessage = useCallback((text: string, address: string | null) => {
+  const sendMessage = useCallback((text: string, address: string | null | undefined) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       setError('Not connected to chat');
       return;

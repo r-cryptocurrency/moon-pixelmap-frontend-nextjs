@@ -21,7 +21,7 @@ export default function ChatInputArea({ className = '' }: ChatInputProps) {
     }
 
     // Send message via shared WebSocket context
-    sendMessage(message.trim(), isConnected ? address : undefined);
+    sendMessage(message.trim(), isConnected ? address : null);
     setMessage('');
   };
 
