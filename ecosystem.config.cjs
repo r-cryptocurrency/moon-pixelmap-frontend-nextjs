@@ -4,12 +4,12 @@ module.exports = {
       name: 'moon-frontend',
       script: 'npm',
       args: 'start',
-      cwd: '/home/jw/src/moonplace/moon-pixelmap-frontend-nextjs',
+      // cwd: './', // Uses current directory where command is run
       env: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3003
       },
-      env_file: '/home/jw/src/moonplace/moon-pixelmap-frontend-nextjs/.env.local',
+      env_file: './.env.local',
       instances: 1,
       exec_mode: 'fork',
       merge_logs: true,
