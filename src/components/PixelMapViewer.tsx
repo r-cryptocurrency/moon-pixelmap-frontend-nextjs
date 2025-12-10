@@ -70,26 +70,31 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     return () => clearInterval(animationInterval);
   }, []);
   
-  // Center the pixel map in the canvas
-  const centerMap = useCallback(() => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    
-    // Calculate the position to center the map
-    const mapWidth = PIXEL_MAP_SIZE * pixelSize;
-    const mapHeight = PIXEL_MAP_SIZE * pixelSize;
-    
-    // Ensure the map is centered
-    const centerX = Math.max(0, (canvasWidth - mapWidth) / 2);
-    const centerY = Math.max(0, (canvasHeight - mapHeight) / 2);
-    
-    setPan({ x: centerX, y: centerY });
+  // Center the pixel map in the canvas - use ref to avoid dependency issues
+  const centerMapRef = useRef<() => void>(() => {});
+  
+  // Update centerMapRef when pixelSize changes
+  useEffect(() => {
+    centerMapRef.current = () => {
+      if (!canvasRef.current) return;
+      
+      const canvas = canvasRef.current;
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      
+      // Calculate the position to center the map
+      const mapWidth = PIXEL_MAP_SIZE * pixelSize;
+      const mapHeight = PIXEL_MAP_SIZE * pixelSize;
+      
+      // Ensure the map is centered
+      const centerX = Math.max(0, (canvasWidth - mapWidth) / 2);
+      const centerY = Math.max(0, (canvasHeight - mapHeight) / 2);
+      
+      setPan({ x: centerX, y: centerY });
+    };
   }, [pixelSize]);
 
-  // Initialize the pixel map
+  // Initialize the pixel map - only runs once on mount
   useEffect(() => {
     const loadPixelMap = async (preservePosition = false) => {
       try {
@@ -104,7 +109,7 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
           
           // Center the map only on initial load (not on refresh)
           if (!preservePosition && canvasRef.current) {
-            centerMap();
+            centerMapRef.current();
           }
           // If preservePosition is true, we keep the current pan state (no setPan call needed)
         };
@@ -135,7 +140,8 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     return () => {
       window.removeEventListener('pixelsUpdated', handlePixelsUpdated);
     };
-  }, [centerMap]); // Empty dependency array - only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
   
   const fetchAndProcessUserPixels = useCallback(async () => {
     if (!isConnected || !address) {
