@@ -18,8 +18,13 @@ export default function UpdatePixelPanel({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Image validation constants
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
   // Calculate area dimensions
   const areaDimensions = selectedPixels.length > 0 ? {
@@ -83,14 +88,43 @@ export default function UpdatePixelPanel({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    setImageError(null);
+    
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(null);
+      return;
     }
+
+    // Validate file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setImageError('Invalid file type. Please use PNG, JPEG, GIF, or WebP.');
+      setImageFile(null);
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setImageError(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
+      setImageFile(null);
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.onerror = () => {
+      setImageError('Failed to read image file.');
+      setImageFile(null);
+      setImagePreview(null);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUpload = async () => {
@@ -261,6 +295,14 @@ export default function UpdatePixelPanel({
             onChange={handleFileChange}
             className="text-[10px] w-full"
           />
+          <div className="text-[9px] text-gray-500 mt-1">
+            Max 5MB. Supports PNG, JPEG, GIF, WebP
+          </div>
+          {imageError && (
+            <div className="mt-1 text-[10px] text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 px-2 py-1 rounded">
+              ⚠️ {imageError}
+            </div>
+          )}
         </div>
 
         {/* Preview Canvas */}

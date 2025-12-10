@@ -16,7 +16,6 @@ export default function PixelMapArea({ className = '', onPixelSelect, onAreaSele
   };
   
   const handleAreaSelect = (pixels: { x: number; y: number }[]) => {
-    console.log(`Selected ${pixels.length} pixels`);
     if (onAreaSelect) {
       onAreaSelect(pixels);
     }

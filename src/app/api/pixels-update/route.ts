@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     console.log('Request body:', { 
       address, 
       pixelCount: pixels.length, 
-      avgImageLength: Math.round(pixels.reduce((sum: number, p: any) => sum + p.image.length, 0) / pixels.length)
+      avgImageLength: Math.round(pixels.reduce((sum: number, p: { image: string }) => sum + p.image.length, 0) / pixels.length)
     });
     
     const response = await fetch(`${backendUrl}/api/pixels-update`, {

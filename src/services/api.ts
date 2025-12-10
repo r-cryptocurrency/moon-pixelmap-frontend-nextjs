@@ -10,7 +10,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
  */
 export async function fetchPixelMap(): Promise<Blob> {
   try {
-    console.log('Fetching pixel map from:', `${API_BASE_URL}/api/pixelmap`);
     const response = await fetch(`${API_BASE_URL}/api/pixelmap`, {
       mode: 'cors',
       cache: 'no-cache',
@@ -20,7 +19,6 @@ export async function fetchPixelMap(): Promise<Blob> {
     });
     
     if (!response.ok) {
-      console.error('API Error:', response.status, response.statusText);
       throw new Error(`Failed to fetch pixel map: ${response.status} ${response.statusText}`);
     }
     
@@ -43,10 +41,18 @@ export async function fetchPixelsData(): Promise<Array<PixelData>> {
       throw new Error(`Failed to fetch pixels data: ${response.status} ${response.statusText}`);
     }
     
-    const data = await response.json();
+    interface BackendPixel {
+      x: number;
+      y: number;
+      current_owner?: string;
+      uri?: string;
+      timestamp?: string;
+    }
+    
+    const data: BackendPixel[] = await response.json();
     
     // Map backend response format to our frontend format
-    return data.map((pixel: any) => ({
+    return data.map((pixel) => ({
       x: pixel.x,
       y: pixel.y,
       owner: pixel.current_owner || '',
