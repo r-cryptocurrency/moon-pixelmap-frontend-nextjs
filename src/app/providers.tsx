@@ -28,6 +28,7 @@ const AppKitContext = createContext<AppKit | null>(null);
 export function Providers({ children }: PropsWithChildren) {
   const [queryClient] = useState(() => new QueryClient());
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -44,35 +45,57 @@ export function Providers({ children }: PropsWithChildren) {
       return;
     }
 
-    const origin = window.location.origin;
-    const metadata = {
-      name: 'Moon Pixel Map',
-      description: 'Moon Pixel Map Frontend',
-      url: origin,
-      icons: [`${origin}/favicon.ico`],
-    };
+    try {
+      const origin = window.location.origin;
+      const metadata = {
+        name: 'Moon Pixel Map',
+        description: 'Moon Pixel Map Frontend',
+        url: origin,
+        icons: [`${origin}/favicon.ico`],
+      };
 
-    const wagmiAdapter = new WagmiAdapter({
-      networks: reownNetworks,
-      projectId: REOWN_PROJECT_ID,
-      ssr: true, // Important for Next.js
-    });
-    wagmiConfigInstanceInternal = wagmiAdapter.wagmiConfig;
+      const wagmiAdapter = new WagmiAdapter({
+        networks: reownNetworks,
+        projectId: REOWN_PROJECT_ID,
+        ssr: true, // Important for Next.js
+      });
+      wagmiConfigInstanceInternal = wagmiAdapter.wagmiConfig;
 
-    const newAppKit = createAppKit({
-      adapters: [wagmiAdapter],
-      networks: reownNetworks,
-      projectId: REOWN_PROJECT_ID,
-      metadata,
-      // features: {
-      //   analytics: true // Optional - defaults to your Cloud configuration
-      // }
-    });
-    appKitInstanceInternal = newAppKit;
-    
-    setIsInitialized(true);
+      const newAppKit = createAppKit({
+        adapters: [wagmiAdapter],
+        networks: reownNetworks,
+        projectId: REOWN_PROJECT_ID,
+        metadata,
+        // features: {
+        //   analytics: true // Optional - defaults to your Cloud configuration
+        // }
+      });
+      appKitInstanceInternal = newAppKit;
+      
+      setIsInitialized(true);
+    } catch (error) {
+      console.error('Failed to initialize Web3 providers:', error);
+      setInitError(error instanceof Error ? error.message : 'Unknown initialization error');
+    }
 
   }, []); // Empty dependency array ensures it runs once on mount
+
+  if (initError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-500 to-orange-400 text-white p-4">
+        <div className="text-center bg-black/30 p-6 rounded-lg">
+          <h2 className="text-xl font-bold mb-2">Initialization Error</h2>
+          <p className="text-sm">{initError}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-white text-red-600 rounded-lg font-semibold"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!REOWN_PROJECT_ID || REOWN_PROJECT_ID === 'YOUR_REOWN_CLOUD_PROJECT_ID') {
     return (
@@ -90,7 +113,7 @@ export function Providers({ children }: PropsWithChildren) {
   // Render children only after initialization is complete and instances are available
   if (!isInitialized || !wagmiConfigInstanceInternal || !appKitInstanceInternal) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-500 to-orange-400">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-white">Loading Web3 Providers...</p>
