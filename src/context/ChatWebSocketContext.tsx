@@ -120,7 +120,7 @@ export function ChatWebSocketProvider({ children }: ChatWebSocketProviderProps) 
           }
         }, delay);
       };
-    } catch (err) {
+    } catch {
       setConnecting(false);
       setError('Failed to connect to chat server');
     }

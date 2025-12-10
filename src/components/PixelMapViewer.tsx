@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { fetchPixelMap, fetchPixelsData, PixelData } from '@/services/api';
+import { fetchPixelMap, fetchPixelsData } from '@/services/api';
 
 interface PixelMapViewerProps {
   onPixelClick?: (x: number, y: number) => void;
@@ -28,7 +28,6 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
   const [error, setError] = useState<string | null>(null);
   const [pixelSize, setPixelSize] = useState(10); // Default size of each pixel
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
   const { address, isConnected } = useAccount();

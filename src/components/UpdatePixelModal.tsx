@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, ChangeEvent } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
-import { fetchPixelsData, updatePixel, PixelData } from '@/services/api';
+import { fetchPixelData } from '@/services/api';
 import { PIXEL_MAP_CONTRACT_CONFIG } from '@/config/contractConfig';
 
 interface UpdatePixelModalProps {

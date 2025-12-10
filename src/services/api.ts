@@ -52,7 +52,7 @@ export async function fetchPixelsData(): Promise<Array<PixelData>> {
     const data: BackendPixel[] = await response.json();
     
     // Map backend response format to our frontend format
-    return data.map((pixel) => ({
+    return data.map((pixel: BackendPixel) => ({
       x: pixel.x,
       y: pixel.y,
       owner: pixel.current_owner || '',
@@ -88,7 +88,7 @@ export async function fetchPixelData(x: number, y: number): Promise<PixelData> {
     }
     
     // Map backend response to our frontend format
-    const data = await response.json();
+    const data: BackendPixel = await response.json();
     return {
       x: data.x,
       y: data.y,

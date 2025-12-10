@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
 import PixelMapArea from '@/components/PixelMapArea';
 import StatusPanel  from '@/components/StatusPanel';
 import UpdatePixelPanel from '@/components/UpdatePixelPanel';
