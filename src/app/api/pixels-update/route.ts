@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward the request to our backend service
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4321';
+    // Use BACKEND_INTERNAL_URL for server-to-server communication (not exposed to browser)
+    // Falls back to NEXT_PUBLIC_API_URL, then localhost
+    const backendUrl = process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4321';
     
     console.log('Forwarding to backend:', `${backendUrl}/api/pixels-update`);
     console.log('Request body:', { 

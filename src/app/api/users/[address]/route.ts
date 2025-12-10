@@ -17,7 +17,8 @@ export async function GET(
 
   try {
     // Forward the request to our backend service
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4321';
+    // Use BACKEND_INTERNAL_URL for server-to-server communication
+    const backendUrl = process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4321';
     const response = await fetch(`${backendUrl}/api/users/${address}`, {
       headers: {
         'Content-Type': 'application/json',
