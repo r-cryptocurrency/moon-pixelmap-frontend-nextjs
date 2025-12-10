@@ -21,6 +21,15 @@ interface SelectionRect {
   endY: number;
 }
 
+// Animation colors for highlight
+const highlightAnimationColors = [
+  'rgba(255, 0, 0, 0.9)', // Red
+  'rgba(0, 255, 0, 0.9)', // Green
+  'rgba(0, 0, 255, 0.9)', // Blue
+  'rgba(255, 255, 0, 0.9)', // Yellow
+  'rgba(255, 0, 255, 0.9)', // Magenta
+];
+
 export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMode = false, className = '' }: PixelMapViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,14 +50,6 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
   
   const PIXEL_MAP_SIZE = 100; // 100x100 pixel grid
 
-  // Animation colors for highlight
-  const highlightAnimationColors = [
-    'rgba(255, 0, 0, 0.9)', // Red
-    'rgba(0, 255, 0, 0.9)', // Green
-    'rgba(0, 0, 255, 0.9)', // Blue
-    'rgba(255, 255, 0, 0.9)', // Yellow
-    'rgba(255, 0, 255, 0.9)', // Magenta
-  ];
   const [currentColorIndex, setCurrentColorIndex] = useState(0);
   
   // Clear selection when mode changes
@@ -67,7 +68,7 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     }, 500); // Change color every 500ms
 
     return () => clearInterval(animationInterval);
-  }, [highlightAnimationColors.length]);
+  }, []);
   
   // Initialize the pixel map
   useEffect(() => {
@@ -115,7 +116,7 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     return () => {
       window.removeEventListener('pixelsUpdated', handlePixelsUpdated);
     };
-  }, []); // Empty dependency array - only run once on mount
+  }, [centerMap]); // Empty dependency array - only run once on mount
   
   const fetchAndProcessUserPixels = useCallback(async () => {
     if (!isConnected || !address) {
@@ -397,7 +398,6 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
       } else if (!selectionMode) {
         // In pan mode ONLY, allow dragging
         if (dx > dragThreshold || dy > dragThreshold) {
-          setDragging(true);
           setPan({
             x: e.clientX - dragStart.x,
             y: e.clientY - dragStart.y
@@ -447,12 +447,11 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
       }
     }
     
-    setDragging(false);
     setHasMoved(false);
   };
   
   // Handle mouse wheel for zoom
-  const handleWheel = (e: WheelEvent) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     
     // Get cursor position relative to canvas
@@ -472,7 +471,7 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     
     setPixelSize(newPixelSize);
     setPan({ x: newPanX, y: newPanY });
-  };
+  }, [pixelSize, pan]);
 
   // Add wheel event listener with passive: false to allow preventDefault
   useEffect(() => {
@@ -483,7 +482,7 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     return () => {
       canvas.removeEventListener('wheel', handleWheel);
     };
-  }, [pixelSize, pan]);
+  }, [pixelSize, pan, handleWheel]);
   
   return (
     <div ref={containerRef} className={`relative ${className} touch-none`} style={{ touchAction: 'none' }}>
@@ -529,7 +528,7 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={() => { 
-          setDragging(false);
+          // setDragging(false); // Removed as setDragging is not defined
           if (isSelecting) {
             setIsSelecting(false);
           }

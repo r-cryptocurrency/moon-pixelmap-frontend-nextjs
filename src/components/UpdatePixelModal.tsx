@@ -45,7 +45,7 @@ export default function UpdatePixelModal({
 
   // Determine if we're in multi-select mode
   const isMultiSelectMode = pixels && pixels.length > 0;
-  const targetPixels = isMultiSelectMode ? pixels : (x !== undefined && y !== undefined ? [{ x, y }] : []);
+  const targetPixels = useMemo(() => isMultiSelectMode ? pixels : (x !== undefined && y !== undefined ? [{ x, y }] : []), [isMultiSelectMode, pixels, x, y]);
   const primaryPixel = targetPixels[0];
 
   // Check if the contract address is available before attempting to use it.
@@ -99,7 +99,7 @@ export default function UpdatePixelModal({
         setShowAreaUpdatePrompt(false);
       }
     }
-  }, [isOpen, isConnected, address, blockOwner, primaryPixel?.x, primaryPixel?.y, isLoadingOwner, isMultiSelectMode]); // Added isLoadingOwner
+  }, [isOpen, isConnected, address, blockOwner, primaryPixel, isLoadingOwner, isMultiSelectMode, targetPixels, isContractAddressAvailable]); // Added missing dependencies
 
   const validateMultiPixelOwnership = async (pixels: OwnedPixel[], ownerAddress: string) => {
     try {
@@ -240,7 +240,7 @@ export default function UpdatePixelModal({
         ctx.fillText(label, canvas.width / 2, canvas.height / 2);
       }
     }
-  }, [contiguousOwnedArea, updateScope]); // Added dependencies
+  }, [contiguousOwnedArea, updateScope, getAreaDimensions]); // Added dependencies
 
   useEffect(() => {
     if (isOpen) {
@@ -430,9 +430,9 @@ export default function UpdatePixelModal({
     }
   };
     
-  if (!isOpen) return null;
+  // if (!isOpen) return null; // Moved to bottom to avoid conditional hook call
   
-  const getAreaDimensions = () => {
+  const getAreaDimensions = useCallback(() => {
     if (contiguousOwnedArea.length === 0) return { width: 1, height: 1};
     const xs = contiguousOwnedArea.map(p => p.x);
     const ys = contiguousOwnedArea.map(p => p.y);
@@ -440,7 +440,7 @@ export default function UpdatePixelModal({
         width: Math.max(...xs) - Math.min(...xs) + 1,
         height: Math.max(...ys) - Math.min(...ys) + 1,
     };
-  };
+  }, [contiguousOwnedArea]);
 
   const areaDimensions = getAreaDimensions();
   const previewCanvasLabel = updateScope === 'area' && contiguousOwnedArea.length > 0 
@@ -473,6 +473,8 @@ export default function UpdatePixelModal({
         handleFileChange({ target: { files: fileInputRef.current.files } } as ChangeEvent<HTMLInputElement>);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}>
