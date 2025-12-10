@@ -7,9 +7,9 @@ const isValidEthereumAddress = (address: string): boolean => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { address: string } }
+  { params }: { params: Promise<{ address: string }> }
 ) {
-  const address = params.address;
+  const { address } = await params;
 
   if (!isValidEthereumAddress(address)) {
     return NextResponse.json({ error: 'Invalid Ethereum address format' }, { status: 400 });

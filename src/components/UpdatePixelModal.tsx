@@ -550,6 +550,7 @@ export default function UpdatePixelModal({
             {originalImageSrc && (
               <div className="mb-4">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Original Preview:</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={originalImageSrc} alt="Original Uploaded Preview" className="max-w-full h-auto max-h-40 border border-gray-300 dark:border-gray-600 object-contain bg-white" />
               </div>
             )}
