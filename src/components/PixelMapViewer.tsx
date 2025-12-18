@@ -130,14 +130,9 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
     loadPixelMap(false); // Initial load, center the map
     
     // Listen for pixel update events to refresh the map
-    // Add delay to allow backend to process the blockchain event (polls every 10s)
     const handlePixelsUpdated = () => {
-      console.log('Pixels updated event received, waiting for backend to process...');
-      // Wait 12 seconds to ensure backend has processed the event (10s poll interval + buffer)
-      setTimeout(() => {
-        console.log('Refreshing map after delay...');
-        loadPixelMap(true); // Preserve position on refresh
-      }, 12000);
+      console.log('Pixels updated, refreshing map...');
+      loadPixelMap(true); // Preserve position on refresh
     };
     
     window.addEventListener('pixelsUpdated', handlePixelsUpdated);
@@ -514,14 +509,14 @@ export default function PixelMapViewer({ onPixelClick, onAreaSelect, selectionMo
       
       {/* Selection Mode Indicator */}
       {selectionMode && (
-        <div className="absolute top-2 left-2 z-20 bg-blue-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse">
+        <div className="absolute top-16 left-2 z-20 bg-blue-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse">
           🎯 Drag to select pixels
         </div>
       )}
       
-      {/* Clear Selection Button - positioned at bottom to avoid overlap with instructions */}
+      {/* Clear Selection Button */}
       {selectionRect && !isSelecting && (
-        <div className="absolute top-2 right-2 z-20">
+        <div className="absolute top-16 right-2 z-20">
           <button
             onClick={() => setSelectionRect(null)}
             className="px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm shadow-lg font-medium"

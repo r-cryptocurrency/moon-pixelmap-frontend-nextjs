@@ -4,7 +4,8 @@ This is the Next.js frontend for the Moon Pixel Map application. It allows users
 
 ## Project Status
 
-🚀 **Production Ready** (as of December 10, 2025)
+🚀 **Production Ready** (as of December 18, 2025)
+- **Security Updated:** All dependencies updated to latest versions (Next.js 16, React 19) to resolve critical vulnerabilities.
 - All core features implemented and tested
 - Mobile-responsive design
 - Full error handling with error boundaries
@@ -13,7 +14,7 @@ This is the Next.js frontend for the Moon Pixel Map application. It allows users
 
 ## Tech Stack
 
-*   Next.js 15.3.2 (with App Router)
+*   Next.js 16.0.10 (with App Router)
 *   React 19
 *   TypeScript 5
 *   Tailwind CSS 4.1.7
@@ -201,3 +202,46 @@ Please refer to the main project's contributing guidelines.
 
 This project is licensed under the [Specify License Here].
 
+
+## Production Deployment with Systemd
+
+We recommend running the application using `systemd` with a dedicated user for better security and process management.
+
+### 1. Create a Dedicated User
+(If not already created for the backend)
+```bash
+sudo useradd -r -m -s /bin/false node-moonplace
+```
+
+### 2. Setup Application Code
+Clone or move the repository to the user's home directory:
+```bash
+# Assuming code is currently in /home/jw/src/moonplace
+sudo cp -r /home/jw/src/moonplace /home/node-moonplace/
+sudo chown -R node-moonplace:node-moonplace /home/node-moonplace/moonplace
+```
+
+### 3. Install Dependencies and Build
+Switch to the user (temporarily enabling shell if needed, or use sudo) to install dependencies and build the Next.js app:
+```bash
+sudo -u node-moonplace bash -c 'cd /home/node-moonplace/moonplace/moon-pixelmap-frontend-nextjs && npm install && npm run build'
+```
+
+### 4. Configure Systemd Service
+Copy the provided service file to the systemd directory:
+```bash
+sudo cp /home/node-moonplace/moonplace/systemd/moon-pixelmap-frontend.service /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+### 5. Start and Enable Service
+```bash
+sudo systemctl start moon-pixelmap-frontend
+sudo systemctl enable moon-pixelmap-frontend
+```
+
+### 6. View Logs
+View logs using journalctl:
+```bash
+sudo journalctl -u moon-pixelmap-frontend -f
+```
