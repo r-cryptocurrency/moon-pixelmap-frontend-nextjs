@@ -80,6 +80,11 @@
   color: rgba(55, 65, 81, 0.9) !important; /* slightly lighter text for content */
 }
 
+/* Allow buttons to control their own text color */
+.panel button span {
+  color: inherit !important;
+}
+
 /* Fix vertical spacing */
 html, body {
   height: 100%;
